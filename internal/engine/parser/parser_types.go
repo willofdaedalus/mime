@@ -4,31 +4,30 @@ type tokenType int
 
 // token types for lexer
 const (
-	TK_ENTITY    tokenType = iota + 1
-	TK_NUMBER              // number
-	TK_TEXT                // text
-	TK_TIMESTAMP           // timestamp
-	TK_UUID                // uuid
-	TK_ROUTES              // routes
-	TK_HTTP_VERB           // GET, POST, DELETE, PUT
-	TK_ALTER               // alter
-	TK_REF                 // ref
-	TK_BOOL                // bool
-	TK_SLASH               // /
-	TK_DASH                // -
-	TK_RANGLE              // >
-	TK_LANGLE              // <
-	TK_LBRACKET            // [
-	TK_RBRACKET            // ]
-	TK_COLON               // :
-	TK_LBRACE              // {
-	TK_RBRACE              // }
-	TK_COMMA               // ,
-	TK_NEWLINE             // \n
-	TK_DOT                 // .
-	TK_IDENT               // identifiers like "id", "student", "payload"
-	TK_STRING              // string literals (e.g., `"male"`, `"female"`)
-	TK_DIGITS              // 123, 45.6
+	TK_ENTITY     tokenType = iota + 1
+	TK_NUMBER               // number
+	TK_TEXT                 // text
+	TK_TIMESTAMP            // timestamp
+	TK_UUID                 // uuid
+	TK_ROUTES               // routes
+	TK_HTTP_VERB            // GET, POST, DELETE, PUT
+	TK_ALTER                // alter
+	TK_REF                  // ref
+	TK_BOOL                 // bool
+	TK_ARROW                // ->
+	TK_OPEN_ANGLE           // <>
+	TK_SLASH                // /
+	TK_LBRACKET             // [
+	TK_RBRACKET             // ]
+	TK_COLON                // :
+	TK_LBRACE               // {
+	TK_RBRACE               // }
+	TK_COMMA                // ,
+	TK_NEWLINE              // \n
+	TK_DOT                  // .
+	TK_IDENT                // identifiers like "id", "student", "payload"
+	TK_STRING               // string literals (e.g., `"male"`, `"female"`)
+	TK_DIGITS               // 123, 45.6
 	TK_EOF
 	TK_UNKNOWN
 )
@@ -92,12 +91,6 @@ func (t tokenType) String() string {
 		return "TK_REF"
 	case TK_SLASH:
 		return "TK_SLASH"
-	case TK_DASH:
-		return "TK_DASH"
-	case TK_RANGLE:
-		return "TK_RANGLE"
-	case TK_LANGLE:
-		return "TK_LANGLE"
 	case TK_LBRACKET:
 		return "TK_LBRACKET"
 	case TK_RBRACKET:

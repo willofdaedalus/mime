@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE for details.
 package parser
 
-import "unicode"
+import (
+	"unicode"
+)
 
 func New(input string) *lexer {
 	l := &lexer{input: input}
@@ -40,13 +42,18 @@ func (l *lexer) NextToken() token {
 	case ']':
 		tok = newToken(TK_RBRACKET, l.ch)
 	case '-':
-		tok = newToken(TK_DASH, l.ch)
-	case '>':
-		tok = newToken(TK_RANGLE, l.ch)
+		tok = l.matchOrUnknown('>', TK_ARROW, TK_UNKNOWN)
 	case '<':
-		tok = newToken(TK_LANGLE, l.ch)
+		tok = l.matchOrUnknown('>', TK_OPEN_ANGLE, TK_UNKNOWN)
 	case '/':
 		tok = newToken(TK_SLASH, l.ch)
+	case '"':
+		tok.Type = TK_STRING
+		tok.Literal = l.readString()
+		if tok.Literal == "UNKNOWN" {
+			tok.Type = TK_UNKNOWN
+		}
+		return tok
 	case 0:
 		tok.Literal = ""
 		tok.Type = TK_EOF
@@ -74,32 +81,58 @@ func (l *lexer) skipWhitespace() {
 	}
 }
 
+func (l *lexer) matchOrUnknown(expected byte, multiType, singleType tokenType) token {
+	if l.peekChar() == expected {
+		ch := l.ch
+		l.readChar()
+		return token{Type: multiType, Literal: string(ch) + string(l.ch)}
+	}
+	return newToken(singleType, l.ch)
+}
+
 func (l *lexer) readNumber() string {
 	start := l.position
-	// read the integer part (digits before the decimal point)
+
+	// read integer part
 	for unicode.IsDigit(rune(l.ch)) {
 		l.readChar()
 	}
 
-	// if the next character is a decimal point, read the fractional part (digits after the decimal point)
+	// handle decimal point
 	if l.ch == '.' {
 		l.readChar() // consume the decimal point
-		// ensure we have digits after the decimal point, otherwise it's not a valid float
+
+		// if there's at least one digit after the decimal, read the fractional part
 		if unicode.IsDigit(rune(l.ch)) {
-			// read the fractional part (digits after the decimal point)
 			for unicode.IsDigit(rune(l.ch)) {
 				l.readChar()
 			}
-		} else {
-			// if there's no digit after the decimal, revert the read
-			l.position = start
-			l.readPosition = start
-			l.ch = l.input[l.position]
-			return l.input[start:l.position] // return as integer, no decimal part
+			return l.input[start:l.position] // return full float number
 		}
 	}
 
-	return l.input[start:l.position] // return the whole number (int or float)
+	return l.input[start:l.position] // return integer
+}
+
+func (l *lexer) readString() string {
+	start := l.position // Start position (including the opening quote)
+	l.readChar()        // Consume opening quote
+
+	for l.ch != '"' && l.ch != '\n' && l.ch != 0 {
+		// Handle escape sequences (\" or \\ or \n, etc.)
+		if l.ch == '\\' {
+			l.readChar() // Skip past the backslash to include the escaped char
+		}
+		l.readChar()
+	}
+
+	// If we hit a newline or EOF before finding a closing quote, it's unknown
+	if l.ch != '"' {
+		return "UNKNOWN"
+	}
+
+	l.readChar() // Consume the closing quote
+	return l.input[start:l.position]
 }
 
 func (l *lexer) readIdentifier() string {
@@ -112,6 +145,14 @@ func (l *lexer) readIdentifier() string {
 
 func isLetter(ch byte) bool {
 	return unicode.IsLetter(rune(ch)) || ch == '_'
+}
+
+func (l *lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+
+	return l.input[l.readPosition]
 }
 
 func newToken(tokType tokenType, ch byte) token {
