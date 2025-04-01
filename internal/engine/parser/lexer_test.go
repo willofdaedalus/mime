@@ -7,6 +7,9 @@ func TestNextToken(t *testing.T) {
 	id: number <> [1, 2]
 	dob: text
 	gender: text <> ["male", "female"]
+
+routes ->
+	GET /users/me -> self.id
 `
 
 	tests := []struct {
@@ -37,7 +40,17 @@ func TestNextToken(t *testing.T) {
 		{TK_COMMA, ","},
 		{TK_STRING, "\"female\""},
 		{TK_RBRACKET, "]"},
+		{TK_ROUTES, "routes"},
+		{TK_ARROW, "->"},
+		{TK_HTTP_VERB, "GET"},
+		{TK_ENDPOINT, "/users/me"},
+		{TK_ARROW, "->"},
+		{TK_SELF, "self"},
+		{TK_DOT, "."},
+		{TK_IDENT, "id"},
 	}
+	// routes ->
+	// 	GET /users/me -> self.id
 
 	l := New(input)
 

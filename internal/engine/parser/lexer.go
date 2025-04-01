@@ -29,6 +29,8 @@ func (l *lexer) NextToken() token {
 	l.skipWhitespace()
 
 	switch l.ch {
+	case '.':
+		tok = newToken(TK_DOT, l.ch)
 	case ':':
 		tok = newToken(TK_COLON, l.ch)
 	case ',':
@@ -46,7 +48,12 @@ func (l *lexer) NextToken() token {
 	case '<':
 		tok = l.matchOrUnknown('>', TK_OPEN_ANGLE, TK_UNKNOWN)
 	case '/':
-		tok = newToken(TK_SLASH, l.ch)
+		if unicode.IsLetter(rune(l.peekChar())) {
+			tok.Literal = l.collectEndpointStr()
+			tok.Type = TK_ENDPOINT
+			return tok
+		}
+		tok = newToken(TK_UNKNOWN, l.ch)
 	case '"':
 		tok.Type = TK_STRING
 		tok.Literal = l.readString()
@@ -114,24 +121,34 @@ func (l *lexer) readNumber() string {
 	return l.input[start:l.position] // return integer
 }
 
+func (l *lexer) collectEndpointStr() string {
+	start := l.position
+	l.readChar()
+
+	for l.ch != ' ' && l.ch != '\n' {
+		l.readChar()
+	}
+	return l.input[start:l.position]
+}
+
 func (l *lexer) readString() string {
-	start := l.position // Start position (including the opening quote)
-	l.readChar()        // Consume opening quote
+	start := l.position // start position (including the opening quote)
+	l.readChar()        // consume opening quote
 
 	for l.ch != '"' && l.ch != '\n' && l.ch != 0 {
-		// Handle escape sequences (\" or \\ or \n, etc.)
+		// handle escape sequences (\" or \\ or \n, etc.)
 		if l.ch == '\\' {
-			l.readChar() // Skip past the backslash to include the escaped char
+			l.readChar() // skip past the backslash to include the escaped char
 		}
 		l.readChar()
 	}
 
-	// If we hit a newline or EOF before finding a closing quote, it's unknown
+	// if we hit a newline or eof before finding a closing quote, it's unknown
 	if l.ch != '"' {
 		return "UNKNOWN"
 	}
 
-	l.readChar() // Consume the closing quote
+	l.readChar() // consume the closing quote
 	return l.input[start:l.position]
 }
 

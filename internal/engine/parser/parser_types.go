@@ -13,10 +13,11 @@ const (
 	TK_HTTP_VERB            // GET, POST, DELETE, PUT
 	TK_ALTER                // alter
 	TK_REF                  // ref
+	TK_SELF                 // self
 	TK_BOOL                 // bool
+	TK_ENDPOINT             // /employees/:id
 	TK_ARROW                // ->
 	TK_OPEN_ANGLE           // <>
-	TK_SLASH                // /
 	TK_LBRACKET             // [
 	TK_RBRACKET             // ]
 	TK_COLON                // :
@@ -55,6 +56,7 @@ var keywords = map[string]tokenType{
 	"routes":    TK_ROUTES,
 	"alter":     TK_ALTER,
 	"ref":       TK_REF,
+	"self":      TK_SELF,
 	"GET":       TK_HTTP_VERB,
 	"POST":      TK_HTTP_VERB,
 	"DELETE":    TK_HTTP_VERB,
@@ -69,6 +71,7 @@ func lookUpIdent(ident string) tokenType {
 	return TK_IDENT
 }
 
+// tokenTypeToString converts the tokenType to its string representation
 func (t tokenType) String() string {
 	switch t {
 	case TK_ENTITY:
@@ -89,8 +92,16 @@ func (t tokenType) String() string {
 		return "TK_ALTER"
 	case TK_REF:
 		return "TK_REF"
-	case TK_SLASH:
-		return "TK_SLASH"
+	case TK_SELF:
+		return "TK_SELF"
+	case TK_BOOL:
+		return "TK_BOOL"
+	case TK_ENDPOINT:
+		return "TK_ENDPOINT"
+	case TK_ARROW:
+		return "TK_ARROW"
+	case TK_OPEN_ANGLE:
+		return "TK_OPEN_ANGLE"
 	case TK_LBRACKET:
 		return "TK_LBRACKET"
 	case TK_RBRACKET:
@@ -111,6 +122,8 @@ func (t tokenType) String() string {
 		return "TK_IDENT"
 	case TK_STRING:
 		return "TK_STRING"
+	case TK_DIGITS:
+		return "TK_DIGITS"
 	case TK_EOF:
 		return "TK_EOF"
 	case TK_UNKNOWN:
