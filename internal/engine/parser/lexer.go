@@ -30,51 +30,49 @@ func (l *lexer) NextToken() token {
 
 	switch l.ch {
 	case '.':
-		tok = newToken(TK_DOT, l.ch)
-	case ':':
-		tok = newToken(TK_COLON, l.ch)
+		tok = newToken(TokenDot, l.ch)
 	case ',':
-		tok = newToken(TK_COMMA, l.ch)
+		tok = newToken(TokenComma, l.ch)
 	case '{':
-		tok = newToken(TK_LBRACE, l.ch)
+		tok = newToken(TokenLBrace, l.ch)
 	case '}':
-		tok = newToken(TK_RBRACE, l.ch)
+		tok = newToken(TokenRBrace, l.ch)
 	case '[':
-		tok = newToken(TK_LBRACKET, l.ch)
+		tok = newToken(TokenLBracket, l.ch)
 	case ']':
-		tok = newToken(TK_RBRACKET, l.ch)
+		tok = newToken(TokenRBracket, l.ch)
 	case '-':
-		tok = l.matchOrUnknown('>', TK_ARROW, TK_UNKNOWN)
+		tok = l.matchOrUnknown('>', TokenArrow, TokenUnknown)
 	case '<':
-		tok = l.matchOrUnknown('>', TK_OPEN_ANGLE, TK_UNKNOWN)
+		tok = l.matchOrUnknown('>', TokenOpenAngle, TokenUnknown)
 	case '/':
 		if unicode.IsLetter(rune(l.peekChar())) {
 			tok.Literal = l.collectEndpointStr()
-			tok.Type = TK_ENDPOINT
+			tok.Type = TokenEndpoint
 			return tok
 		}
-		tok = newToken(TK_UNKNOWN, l.ch)
+		tok = newToken(TokenUnknown, l.ch)
 	case '"':
-		tok.Type = TK_STRING
+		tok.Type = TokenString
 		tok.Literal = l.readString()
 		if tok.Literal == "UNKNOWN" {
-			tok.Type = TK_UNKNOWN
+			tok.Type = TokenUnknown
 		}
 		return tok
 	case 0:
 		tok.Literal = ""
-		tok.Type = TK_EOF
+		tok.Type = TokenEOF
 	default:
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = lookUpIdent(tok.Literal)
 			return tok
 		} else if unicode.IsDigit(rune(l.ch)) {
-			tok.Type = TK_DIGITS
+			tok.Type = TokenDigits
 			tok.Literal = l.readNumber()
 			return tok
 		} else {
-			tok = newToken(TK_UNKNOWN, l.ch)
+			tok = newToken(TokenUnknown, l.ch)
 		}
 	}
 

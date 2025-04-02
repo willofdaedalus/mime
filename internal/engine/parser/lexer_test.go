@@ -4,9 +4,9 @@ import "testing"
 
 func TestNextToken(t *testing.T) {
 	input := `entity user ->
-	id: number <> [1, 2]
-	dob: text
-	gender: text <> ["male", "female"]
+	id number <> [1, 2]
+	dob text
+	gender text <> ["male", "female"]
 
 routes ->
 	GET /users/me -> self.id
@@ -16,38 +16,35 @@ routes ->
 		expectedType    tokenType
 		expectedLiteral string
 	}{
-		{TK_ENTITY, "entity"},
-		{TK_IDENT, "user"},
-		{TK_ARROW, "->"},
-		{TK_IDENT, "id"},
-		{TK_COLON, ":"},
-		{TK_NUMBER, "number"},
-		{TK_OPEN_ANGLE, "<>"},
-		{TK_LBRACKET, "["},
-		{TK_DIGITS, "1"},
-		{TK_COMMA, ","},
-		{TK_DIGITS, "2"},
-		{TK_RBRACKET, "]"},
-		{TK_IDENT, "dob"},
-		{TK_COLON, ":"},
-		{TK_TEXT, "text"},
-		{TK_IDENT, "gender"},
-		{TK_COLON, ":"},
-		{TK_TEXT, "text"},
-		{TK_OPEN_ANGLE, "<>"},
-		{TK_LBRACKET, "["},
-		{TK_STRING, "\"male\""},
-		{TK_COMMA, ","},
-		{TK_STRING, "\"female\""},
-		{TK_RBRACKET, "]"},
-		{TK_ROUTES, "routes"},
-		{TK_ARROW, "->"},
-		{TK_HTTP_VERB, "GET"},
-		{TK_ENDPOINT, "/users/me"},
-		{TK_ARROW, "->"},
-		{TK_SELF, "self"},
-		{TK_DOT, "."},
-		{TK_IDENT, "id"},
+		{TokenEntity, "entity"},
+		{TokenIdent, "user"},
+		{TokenArrow, "->"},
+		{TokenIdent, "id"},
+		{TokenNumber, "number"},
+		{TokenOpenAngle, "<>"},
+		{TokenLBracket, "["},
+		{TokenDigits, "1"},
+		{TokenComma, ","},
+		{TokenDigits, "2"},
+		{TokenRBracket, "]"},
+		{TokenIdent, "dob"},
+		{TokenText, "text"},
+		{TokenIdent, "gender"},
+		{TokenText, "text"},
+		{TokenOpenAngle, "<>"},
+		{TokenLBracket, "["},
+		{TokenString, "\"male\""},
+		{TokenComma, ","},
+		{TokenString, "\"female\""},
+		{TokenRBracket, "]"},
+		{TokenRoutes, "routes"},
+		{TokenArrow, "->"},
+		{TokenGet, "GET"},
+		{TokenEndpoint, "/users/me"},
+		{TokenArrow, "->"},
+		{TokenSelf, "self"},
+		{TokenDot, "."},
+		{TokenIdent, "id"},
 	}
 	// routes ->
 	// 	GET /users/me -> self.id
