@@ -1,18 +1,35 @@
 // Copyright (c) 2016-2017 Thorsten Ball
 // Licensed under the MIT License. See LICENSE for details.
-package parser
+package lexer
 
 import (
 	"unicode"
 )
 
-func New(input string) *lexer {
-	l := &lexer{input: input}
+type tokenType int
+
+// lexer struct
+type Lexer struct {
+	input        string
+	position     int  // current position in input
+	readPosition int  // next position to read
+	ch           byte // current character being examined
+}
+
+// token struct
+type Token struct {
+	Type    tokenType
+	Literal string
+	LineNum int
+}
+
+func New(input string) *Lexer {
+	l := &Lexer{input: input}
 	l.readChar()
 	return l
 }
 
-func (l *lexer) readChar() {
+func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
 	} else {
@@ -22,8 +39,8 @@ func (l *lexer) readChar() {
 	l.readPosition += 1
 }
 
-func (l *lexer) NextToken() token {
-	var tok token
+func (l *Lexer) NextToken() Token {
+	var tok Token
 
 	// this might backfire especially if we need structure
 	l.skipWhitespace()
@@ -37,6 +54,9 @@ func (l *lexer) NextToken() token {
 		tok = newToken(TokenLBrace, l.ch)
 	case '}':
 		tok = newToken(TokenRBrace, l.ch)
+	case '#':
+		tok = newToken(TokenComment, l.ch)
+		l.skipComment()
 	case '[':
 		tok = newToken(TokenLBracket, l.ch)
 	case ']':
@@ -80,22 +100,28 @@ func (l *lexer) NextToken() token {
 	return tok
 }
 
-func (l *lexer) skipWhitespace() {
+func (l *Lexer) skipComment() {
+	for l.ch != '\n' {
+		l.readChar()
+	}
+}
+
+func (l *Lexer) skipWhitespace() {
 	for unicode.IsSpace(rune(l.ch)) {
 		l.readChar()
 	}
 }
 
-func (l *lexer) matchOrUnknown(expected byte, multiType, singleType tokenType) token {
+func (l *Lexer) matchOrUnknown(expected byte, multiType, singleType tokenType) Token {
 	if l.peekChar() == expected {
 		ch := l.ch
 		l.readChar()
-		return token{Type: multiType, Literal: string(ch) + string(l.ch)}
+		return Token{Type: multiType, Literal: string(ch) + string(l.ch)}
 	}
 	return newToken(singleType, l.ch)
 }
 
-func (l *lexer) readNumber() string {
+func (l *Lexer) readNumber() string {
 	start := l.position
 
 	// read integer part
@@ -119,7 +145,7 @@ func (l *lexer) readNumber() string {
 	return l.input[start:l.position] // return integer
 }
 
-func (l *lexer) collectEndpointStr() string {
+func (l *Lexer) collectEndpointStr() string {
 	start := l.position
 	l.readChar()
 
@@ -129,7 +155,7 @@ func (l *lexer) collectEndpointStr() string {
 	return l.input[start:l.position]
 }
 
-func (l *lexer) readString() string {
+func (l *Lexer) readString() string {
 	start := l.position // start position (including the opening quote)
 	l.readChar()        // consume opening quote
 
@@ -150,7 +176,7 @@ func (l *lexer) readString() string {
 	return l.input[start:l.position]
 }
 
-func (l *lexer) readIdentifier() string {
+func (l *Lexer) readIdentifier() string {
 	start := l.position
 	for isLetter(l.ch) {
 		l.readChar()
@@ -162,7 +188,7 @@ func isLetter(ch byte) bool {
 	return unicode.IsLetter(rune(ch)) || ch == '_'
 }
 
-func (l *lexer) peekChar() byte {
+func (l *Lexer) peekChar() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
 	}
@@ -170,6 +196,6 @@ func (l *lexer) peekChar() byte {
 	return l.input[l.readPosition]
 }
 
-func newToken(tokType tokenType, ch byte) token {
-	return token{Type: tokType, Literal: string(ch)}
+func newToken(tokType tokenType, ch byte) Token {
+	return Token{Type: tokType, Literal: string(ch)}
 }

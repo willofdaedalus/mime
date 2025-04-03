@@ -1,15 +1,18 @@
-package parser
+package lexer
 
 import "testing"
 
 func TestNextToken(t *testing.T) {
 	input := `entity user ->
-	id number <> [1, 2]
+	id int <> [1, 2]
 	dob text
 	gender text <> ["male", "female"]
+end
 
+# this is a comment and shouldn't be tokenized
 routes ->
 	GET /users/me -> self.id
+end
 `
 
 	tests := []struct {
@@ -20,7 +23,7 @@ routes ->
 		{TokenIdent, "user"},
 		{TokenArrow, "->"},
 		{TokenIdent, "id"},
-		{TokenNumber, "number"},
+		{TokenInt, "int"},
 		{TokenOpenAngle, "<>"},
 		{TokenLBracket, "["},
 		{TokenDigits, "1"},
@@ -37,6 +40,8 @@ routes ->
 		{TokenComma, ","},
 		{TokenString, "\"female\""},
 		{TokenRBracket, "]"},
+		{TokenEnd, "end"},
+		{TokenComment, "#"},
 		{TokenRoutes, "routes"},
 		{TokenArrow, "->"},
 		{TokenGet, "GET"},
@@ -45,6 +50,7 @@ routes ->
 		{TokenSelf, "self"},
 		{TokenDot, "."},
 		{TokenIdent, "id"},
+		{TokenEnd, "end"},
 	}
 	// routes ->
 	// 	GET /users/me -> self.id

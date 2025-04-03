@@ -1,26 +1,30 @@
 entity student ->
-	id: number {increment}
-	dob: text
-	age: number
-	created_at: timestamp
-	gender: text <> ["male", "female"]
+	id number {increment}
+	dob text
+	age number
+	created_at timestamp
+	gender text ("male", "female")
+end
 
 # override the payload which is entity student by default
 # with this custom one
 alter ref student.payload ->
-	gender: text
-	age: number
-	dob: text
+	gender text
+	age number
+	dob text
+end
 
 alter ref student.response ->
-	id: number
-	dob: text
-	age: number
-	created_at: timestamp
-	gender: text
+	id number
+	dob text
+	age number
+	created_at timestamp
+	gender text
+end
 
 # very basic routing; might consider advanced
 routes ->
-	GET /employees/:id -> self.id
-	POST /employees -> payload
-	POST /employees -> self
+	GET /employees/:id <- self.id
+	POST /employees <- payload
+	POST /employees <- self
+end
