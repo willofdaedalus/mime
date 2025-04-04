@@ -16,13 +16,12 @@ const (
 	TokenEnd                                          // end
 	TokenEndpoint                                     // /employees/:id
 	TokenArrow                                        // ->
-	TokenOpenAngle                                    // <>
-	TokenLBracket                                     // [
-	TokenRBracket                                     // ]
-	TokenColon                                        // :
-	TokenLBrace                                       // {
-	TokenRBrace                                       // }
-	TokenComma                                        // ,
+	TokenEnumOpen                                     // (
+	TokenEnumClose                                    // )
+	TokenListOpen                                     // [
+	TokenListClose                                    // ]
+	TokenConsOpen                                     // {
+	TokenConsClose                                    // }
 	TokenNewline                                      // \n
 	TokenDot                                          // .
 	TokenIdent                                        // identifiers like "id", "student", "payload"
@@ -68,7 +67,7 @@ var keywords = map[string]tokenType{
 	"required":  TokenConstraintNotNull,
 }
 
-var allDataTypes = map[tokenType]struct{}{
+var AllDataTypes = map[tokenType]struct{}{
 	TokenInt:       {},
 	TokenTimestamp: {},
 	TokenText:      {},
@@ -76,8 +75,22 @@ var allDataTypes = map[tokenType]struct{}{
 	TokenUuid:      {},
 }
 
-func IsValidDataType(tt tokenType) bool {
-	_, ok := allDataTypes[tt]
+var allConstraints = map[tokenType]struct{}{
+	TokenConstraintAutoIncrement: {},
+	TokenConstraintUnique:        {},
+	TokenConstraintForeignKey:    {},
+	TokenConstraintPrimaryKey:    {},
+	TokenConstraintNotNull:       {},
+}
+
+var AnnotationOpens = map[tokenType]struct{}{
+	TokenEnumOpen: {},
+	TokenListOpen: {},
+	TokenConsOpen: {},
+}
+
+func IsValidMemberOf(tt tokenType, list map[tokenType]struct{}) bool {
+	_, ok := list[tt]
 	return ok
 }
 
@@ -118,20 +131,14 @@ func (t tokenType) String() string {
 		return "TokenENDPOINT"
 	case TokenArrow:
 		return "TokenARROW"
-	case TokenOpenAngle:
-		return "TokenOPEN_ANGLE"
-	case TokenLBracket:
+	case TokenListOpen:
 		return "TokenLBRACKET"
-	case TokenRBracket:
+	case TokenListClose:
 		return "TokenRBRACKET"
-	case TokenColon:
-		return "TokenCOLON"
-	case TokenLBrace:
+	case TokenConsOpen:
 		return "TokenLBRACE"
-	case TokenRBrace:
+	case TokenConsClose:
 		return "TokenRBRACE"
-	case TokenComma:
-		return "TokenCOMMA"
 	case TokenNewline:
 		return "TokenNEWLINE"
 	case TokenDot:

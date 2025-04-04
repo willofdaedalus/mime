@@ -1,9 +1,9 @@
 entity student ->
-	id number {increment}
+	id number { increment required }
 	dob text
 	age number
 	created_at timestamp
-	gender text ("male", "female")
+	gender text ( "male" "female" )
 end
 
 # override the payload which is entity student by default

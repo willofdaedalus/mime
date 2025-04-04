@@ -28,10 +28,10 @@ type entityNode struct {
 }
 
 type field struct {
-	name          string
-	dt            dataType
-	constraints   []constraint
-	allowedValues []any
+	name        string
+	dt          dataType
+	constraints []constraint
+	enums       []any
 }
 
 func (parser *Parser) parseEntity() *entityNode {
@@ -51,9 +51,11 @@ func (parser *Parser) parseEntity() *entityNode {
 
 // email text {unique, required}
 func (p *Parser) parseField() {
-	var fieldName, fieldType string
+	var fieldName string
+	var fieldType int
 	var hasEnums bool
 	var cons []string
+	var enumOpen, consOpen, listOpen int
 
 	for p.curToken.Type != lexer.TokenEOF && p.curToken.Type != lexer.TokenNewline {
 		if p.curToken.Type == lexer.TokenIdent {
@@ -69,8 +71,8 @@ func (p *Parser) parseField() {
 		// remember types can be like this;
 		// manager ref employee {required}
 		// where "ref employee" is the type of manager
-		if lexer.IsValidDataType(p.curToken.Type) {
-			fieldType = p.curToken.Literal
+		if lexer.IsValidMemberOf(p.curToken.Type, lexer.AllDataTypes) {
+			fieldType = int(p.curToken.Type)
 			p.advanceToken()
 		} else {
 			p.pushError("expected a data type")
@@ -78,8 +80,23 @@ func (p *Parser) parseField() {
 			return
 		}
 
-		if p.curToken.Type == lexer.TokenOpenAngle {
-			hasEnums = true
+		if lexer.IsValidMemberOf(p.curToken.Type, lexer.AnnotationOpens) {
+			switch p.curToken.Type {
+			case lexer.TokenEnumOpen:
+				p.advanceToken()
+				p.parseEnums(fieldType)
+			}
 		}
+	}
+}
+
+func (p *Parser) parseEnums(fieldType int) {
+	matches := map[int]int{
+		int(lexer.TokenText):  int(lexer.TokenString),
+		int(lexer.TokenFloat): int(lexer.TokenDigits),
+		int(lexer.TokenInt):   int(lexer.TokenDigits),
+	}
+
+	for p.curToken.Type != lexer.TokenEnumClose && p.curToken.Type != lexer.TokenEOF {
 	}
 }

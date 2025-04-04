@@ -4,9 +4,9 @@ import "testing"
 
 func TestNextToken(t *testing.T) {
 	input := `entity user ->
-	id int <> [1, 2]
+	id int (1, 2)
 	dob text
-	gender text <> ["male", "female"]
+	gender text ("male", "female")
 end
 
 # this is a comment and shouldn't be tokenized
@@ -24,22 +24,18 @@ end
 		{TokenArrow, "->"},
 		{TokenIdent, "id"},
 		{TokenInt, "int"},
-		{TokenOpenAngle, "<>"},
-		{TokenLBracket, "["},
+		{TokenEnumOpen, "("},
 		{TokenDigits, "1"},
-		{TokenComma, ","},
 		{TokenDigits, "2"},
-		{TokenRBracket, "]"},
+		{TokenEnumClose, ")"},
 		{TokenIdent, "dob"},
 		{TokenText, "text"},
 		{TokenIdent, "gender"},
 		{TokenText, "text"},
-		{TokenOpenAngle, "<>"},
-		{TokenLBracket, "["},
+		{TokenEnumOpen, "("},
 		{TokenString, "\"male\""},
-		{TokenComma, ","},
 		{TokenString, "\"female\""},
-		{TokenRBracket, "]"},
+		{TokenEnumClose, ")"},
 		{TokenEnd, "end"},
 		{TokenComment, "#"},
 		{TokenRoutes, "routes"},

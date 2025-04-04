@@ -48,23 +48,23 @@ func (l *Lexer) NextToken() Token {
 	switch l.ch {
 	case '.':
 		tok = newToken(TokenDot, l.ch)
-	case ',':
-		tok = newToken(TokenComma, l.ch)
 	case '{':
-		tok = newToken(TokenLBrace, l.ch)
+		tok = newToken(TokenConsOpen, l.ch)
 	case '}':
-		tok = newToken(TokenRBrace, l.ch)
+		tok = newToken(TokenConsClose, l.ch)
 	case '#':
 		tok = newToken(TokenComment, l.ch)
 		l.skipComment()
 	case '[':
-		tok = newToken(TokenLBracket, l.ch)
+		tok = newToken(TokenListOpen, l.ch)
 	case ']':
-		tok = newToken(TokenRBracket, l.ch)
+		tok = newToken(TokenListClose, l.ch)
+	case '(':
+		tok = newToken(TokenEnumOpen, l.ch)
+	case ')':
+		tok = newToken(TokenEnumClose, l.ch)
 	case '-':
 		tok = l.matchOrUnknown('>', TokenArrow, TokenUnknown)
-	case '<':
-		tok = l.matchOrUnknown('>', TokenOpenAngle, TokenUnknown)
 	case '/':
 		if unicode.IsLetter(rune(l.peekChar())) {
 			tok.Literal = l.collectEndpointStr()
