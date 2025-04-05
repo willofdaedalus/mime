@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 
 	"willofdaedalus/mime/internal/engine/lexer"
 )
@@ -32,8 +33,25 @@ func (p *Parser) advanceToken() {
 
 func (p *Parser) ParseTokens() {
 	for p.curToken.Type != lexer.TokenEOF {
-		if p.curToken.Type == lexer.TokenEntity {
-			en := p.parseEntity()
+		switch p.curToken.Type {
+		case lexer.TokenEntity:
+			p.advanceToken()
+			entity := p.parseEntity()
+			if entity != nil {
+				// Store the entity or process it further
+			}
+		// case lexer.TokenAlter:
+		// 	// Handle alter statements
+		// 	p.parseAlter()
+		// case lexer.TokenRoutes:
+		// 	// Handle routes statements
+		// 	p.parseRoutes()
+		// case lexer.TokenNewline, lexer.TokenComment:
+		// 	// Skip newlines and comments
+		// 	p.advanceToken()
+		default:
+			p.pushError(fmt.Sprintf("unexpected token: %s", p.curToken.Type))
+			p.advanceToken()
 		}
 	}
 }

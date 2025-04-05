@@ -2,7 +2,7 @@ package lexer
 
 // token types for lexer
 const (
-	TokenEntity                  tokenType = iota + 1 // entity
+	TokenEntity                  TokenType = iota + 1 // entity
 	TokenInt                                          // int
 	TokenFloat                                        // float
 	TokenText                                         // text
@@ -41,7 +41,7 @@ const (
 	TokenUnknown
 )
 
-var keywords = map[string]tokenType{
+var keywords = map[string]TokenType{
 	// normal keywords
 	"entity":    TokenEntity,
 	"float":     TokenFloat,
@@ -67,7 +67,7 @@ var keywords = map[string]tokenType{
 	"required":  TokenConstraintNotNull,
 }
 
-var AllDataTypes = map[tokenType]struct{}{
+var AllDataTypes = map[TokenType]struct{}{
 	TokenInt:       {},
 	TokenTimestamp: {},
 	TokenText:      {},
@@ -75,7 +75,7 @@ var AllDataTypes = map[tokenType]struct{}{
 	TokenUuid:      {},
 }
 
-var allConstraints = map[tokenType]struct{}{
+var allConstraints = map[TokenType]struct{}{
 	TokenConstraintAutoIncrement: {},
 	TokenConstraintUnique:        {},
 	TokenConstraintForeignKey:    {},
@@ -83,18 +83,18 @@ var allConstraints = map[tokenType]struct{}{
 	TokenConstraintNotNull:       {},
 }
 
-var AnnotationOpens = map[tokenType]struct{}{
+var AnnotationOpens = map[TokenType]struct{}{
 	TokenEnumOpen: {},
 	TokenListOpen: {},
 	TokenConsOpen: {},
 }
 
-func IsValidMemberOf(tt tokenType, list map[tokenType]struct{}) bool {
+func IsValidMemberOf(tt TokenType, list map[TokenType]struct{}) bool {
 	_, ok := list[tt]
 	return ok
 }
 
-func lookUpIdent(ident string) tokenType {
+func lookUpIdent(ident string) TokenType {
 	if tok, ok := keywords[ident]; ok {
 		return tok
 	}
@@ -103,7 +103,7 @@ func lookUpIdent(ident string) tokenType {
 }
 
 // tokenTypeToString converts the tokenType to its string representation
-func (t tokenType) String() string {
+func (t TokenType) String() string {
 	switch t {
 	case TokenEntity:
 		return "entity"
@@ -112,13 +112,13 @@ func (t tokenType) String() string {
 	case TokenInt:
 		return "int"
 	case TokenText:
-		return "TokenTEXT"
+		return "text"
 	case TokenTimestamp:
-		return "TokenTIMESTAMP"
+		return "timestamp"
 	case TokenUuid:
-		return "TokenUUID"
+		return "uuid"
 	case TokenRoutes:
-		return "TokenROUTES"
+		return "routes"
 	case TokenAlter:
 		return "TokenALTER"
 	case TokenRef:
