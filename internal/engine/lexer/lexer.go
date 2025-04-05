@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-type tokenType int
+type TokenType int
 
 // lexer struct
 type Lexer struct {
@@ -18,7 +18,7 @@ type Lexer struct {
 
 // token struct
 type Token struct {
-	Type    tokenType
+	Type    TokenType
 	Literal string
 	LineNum int
 }
@@ -89,7 +89,11 @@ func (l *Lexer) NextToken() Token {
 			return tok
 		} else if unicode.IsDigit(rune(l.ch)) {
 			tok.Type = TokenDigits
-			tok.Literal = l.readNumber()
+			v, f := l.readNumber()
+			if f {
+				tok.Type = TokenFloat
+			}
+			tok.Literal = v
 			return tok
 		} else {
 			tok = newToken(TokenUnknown, l.ch)
@@ -112,7 +116,7 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-func (l *Lexer) matchOrUnknown(expected byte, multiType, singleType tokenType) Token {
+func (l *Lexer) matchOrUnknown(expected byte, multiType, singleType TokenType) Token {
 	if l.peekChar() == expected {
 		ch := l.ch
 		l.readChar()
@@ -121,7 +125,8 @@ func (l *Lexer) matchOrUnknown(expected byte, multiType, singleType tokenType) T
 	return newToken(singleType, l.ch)
 }
 
-func (l *Lexer) readNumber() string {
+func (l *Lexer) readNumber() (string, bool) {
+	isFloat := false
 	start := l.position
 
 	// read integer part
@@ -131,6 +136,8 @@ func (l *Lexer) readNumber() string {
 
 	// handle decimal point
 	if l.ch == '.' {
+		// set the float flag
+		isFloat = true
 		l.readChar() // consume the decimal point
 
 		// if there's at least one digit after the decimal, read the fractional part
@@ -138,11 +145,11 @@ func (l *Lexer) readNumber() string {
 			for unicode.IsDigit(rune(l.ch)) {
 				l.readChar()
 			}
-			return l.input[start:l.position] // return full float number
+			return l.input[start:l.position], isFloat // return full float number
 		}
 	}
 
-	return l.input[start:l.position] // return integer
+	return l.input[start:l.position], isFloat // return integer
 }
 
 func (l *Lexer) collectEndpointStr() string {
@@ -196,6 +203,6 @@ func (l *Lexer) peekChar() byte {
 	return l.input[l.readPosition]
 }
 
-func newToken(tokType tokenType, ch byte) Token {
+func newToken(tokType TokenType, ch byte) Token {
 	return Token{Type: tokType, Literal: string(ch)}
 }
