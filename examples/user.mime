@@ -1,7 +1,8 @@
 entity student ->
 	id number { increment required }
 	dob text
-	age number
+	age number { default:"18" ensure:"age > 0" }
+	category text ( "minor" "adult" )
 	created_at timestamp
 	gender text ( "male" "female" )
 end
