@@ -61,6 +61,15 @@ end`,
 				},
 			},
 		},
+		{
+			name: "field with enums",
+			input: `entity user ->
+	# this test will return nil because of the 7
+	gender text ("male" "female" 7)
+end`,
+			// this should be nil because of the 7 in there
+			expected: nil,
+		},
 	}
 
 	for _, tt := range tests {

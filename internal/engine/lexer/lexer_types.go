@@ -109,7 +109,7 @@ func lookUpIdent(ident string) TokenType {
 	return TokenIdent
 }
 
-// tokenTypeToString converts the tokenType to its string representation
+// String converts the tokenType to its string representation
 func (t TokenType) String() string {
 	switch t {
 	case TokenEntity:

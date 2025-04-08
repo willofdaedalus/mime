@@ -53,9 +53,10 @@ func (p *Parser) parseEntity() *entityNode {
 		}
 
 		field := p.parseField()
-		if field != nil {
-			entity.fields = append(entity.fields, *field)
+		if field == nil {
+			return nil
 		}
+		entity.fields = append(entity.fields, *field)
 	}
 
 	if p.curToken.Type == lexer.TokenEnd {
@@ -99,13 +100,16 @@ func (p *Parser) parseField() *field {
 	p.advanceToken() // consume data type
 
 	// continue parsing annotations until newline or unexpected token
-	for {
+	for p.curToken.Type != lexer.TokenNewline {
 		switch p.curToken.Type {
 		case lexer.TokenEnumOpen:
 			enums := p.parseEnums(fieldDataType)
-			if enums != nil {
-				f.enums = enums
+			// enums being nil means we got an error
+			if enums == nil {
+				// if one thing is null the whole entity is dead
+				return nil
 			}
+			f.enums = enums
 		case lexer.TokenConsOpen:
 			constraints := p.parseConstraints(f.dt)
 			if constraints != nil {
@@ -117,9 +121,6 @@ func (p *Parser) parseField() *field {
 					p.curToken.FileName, p.curToken.LineNum, p.nextToken.Literal))
 				return nil
 			}
-		case lexer.TokenNewline:
-			p.advanceToken() // consume newline, done with field
-			return f
 		default:
 			if _, ok := lexer.AnnotationOpens[p.curToken.Type]; !ok {
 				// invalid token found where annotation was expected
@@ -129,6 +130,8 @@ func (p *Parser) parseField() *field {
 			return f
 		}
 	}
+
+	return f
 }
 
 func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
@@ -166,13 +169,15 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 				value, _ = strconv.ParseFloat(p.curToken.Literal, 64)
 			}
 			enums = append(enums, value)
-		} else if p.curToken.Type != lexer.TokenNewline {
-			p.pushError(fmt.Sprintf("%s:%d; unexpected token in enum: %s",
-				p.curToken.FileName, p.curToken.LineNum, p.curToken.Type))
-			return nil
+			p.advanceToken()
+			continue
 		}
 
-		p.advanceToken()
+		// on mismatched data type return nil immediately; don't waste
+		// resources processing what we won't return
+		p.pushError(fmt.Sprintf("%s:%d; unexpected type in enum: %s",
+			p.curToken.FileName, p.curToken.LineNum, p.curToken.Type.String()))
+		return nil
 	}
 
 	if p.curToken.Type == lexer.TokenEnumClose {
