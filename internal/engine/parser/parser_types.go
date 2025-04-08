@@ -24,8 +24,25 @@ const (
 )
 
 var enumerableTypes = map[lexer.TokenType]struct{}{
-	lexer.TokenInt:    {},
-	lexer.TokenString: {},
+	lexer.TokenText:  {},
+	lexer.TokenInt:   {},
+	lexer.TokenFloat: {},
+}
+
+var tokenToDataType = map[lexer.TokenType]dataType{
+	lexer.TokenText:      dataText,
+	lexer.TokenInt:       dataInt,
+	lexer.TokenFloat:     dataReal,
+	lexer.TokenTimestamp: dataTimestamp,
+	lexer.TokenUuid:      dataUUID,
+}
+
+var tokenConstraintToConstraintType = map[lexer.TokenType]constraint{
+	lexer.TokenConstraintUnique:        consUnique,
+	lexer.TokenConstraintAutoIncrement: consIncrement,
+	lexer.TokenConstraintPrimaryKey:    consPrimary,
+	lexer.TokenConstraintNotNull:       consRequired,
+	lexer.TokenConstraintForeignKey:    consFK,
 }
 
 var typeConstraintMap = map[dataType][]constraint{

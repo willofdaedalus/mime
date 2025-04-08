@@ -16,7 +16,7 @@ end
 `
 
 	tests := []struct {
-		expectedType    tokenType
+		expectedType    TokenType
 		expectedLiteral string
 	}{
 		{TokenEntity, "entity"},
