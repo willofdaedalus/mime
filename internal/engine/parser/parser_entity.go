@@ -153,6 +153,7 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 
 	// parse enum values until closing parenthesis
 	for p.curToken.Type != lexer.TokenEnumClose && p.curToken.Type != lexer.TokenEOF {
+		// make sure the user is not adding unrelated data types
 		if p.curToken.Type == expectedType {
 			// convert token to appropriate value type based on data type
 			var value any
