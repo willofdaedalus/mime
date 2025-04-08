@@ -18,9 +18,10 @@ type Lexer struct {
 
 // token struct
 type Token struct {
-	Type    TokenType
-	Literal string
-	LineNum int
+	FileName string
+	Type     TokenType
+	Literal  string
+	LineNum  int
 }
 
 func New(input string) *Lexer {
@@ -91,7 +92,7 @@ func (l *Lexer) NextToken() Token {
 			tok.Type = TokenDigits
 			v, f := l.readNumber()
 			if f {
-				tok.Type = TokenFloat
+				tok.Type = TokenDigitsFloat
 			}
 			tok.Literal = v
 			return tok
@@ -180,7 +181,7 @@ func (l *Lexer) readString() string {
 	}
 
 	l.readChar() // consume the closing quote
-	return l.input[start:l.position]
+	return l.input[start+1 : l.position-1]
 }
 
 func (l *Lexer) readIdentifier() string {

@@ -20,14 +20,15 @@ type field struct {
 }
 
 func (p *Parser) parseEntity() *entityNode {
-	// if p.curToken.Type != lexer.TokenEntity {
-	// 	p.pushError(fmt.Sprintf("expected entity token, got %s", p.curToken.Type))
-	// 	return nil
-	// }
-	// p.advanceToken() // consume 'entity'
-	//
+	if p.curToken.Type != lexer.TokenEntity {
+		p.pushError(fmt.Sprintf("expected entity token, got %s", p.curToken.Type))
+		return nil
+	}
+	p.advanceToken() // consume 'entity'
+
 	if p.curToken.Type != lexer.TokenIdent {
 		p.pushError(fmt.Sprintf("expected entity name, got %s", p.curToken.Type))
+		fmt.Println("expected entity name")
 		return nil
 	}
 
@@ -39,6 +40,7 @@ func (p *Parser) parseEntity() *entityNode {
 	// check for arrow token
 	if p.curToken.Type != lexer.TokenArrow {
 		p.pushError(fmt.Sprintf("expected -> after entity name, got %s", p.curToken.Type))
+		fmt.Println("expected -> after entity name")
 		return nil
 	}
 	p.advanceToken() // consume '->'
@@ -68,7 +70,8 @@ func (p *Parser) parseEntity() *entityNode {
 func (p *Parser) parseField() *field {
 	// expect field name (identifier)
 	if p.curToken.Type != lexer.TokenIdent {
-		p.pushError(fmt.Sprintf("expected field name, got %s", p.curToken.Type))
+		p.pushError(fmt.Sprintf("%s:%d; expected field name, got %s",
+			p.curToken.FileName, p.curToken.LineNum, p.curToken.Type))
 		return nil
 	}
 
@@ -79,67 +82,73 @@ func (p *Parser) parseField() *field {
 
 	// parse data type
 	if !lexer.IsValidMemberOf(p.curToken.Type, lexer.AllDataTypes) {
-		p.pushError(fmt.Sprintf("expected data type, got %s", p.curToken.Type))
+		p.pushError(fmt.Sprintf("%s:%d; expected data type, got %s",
+			p.curToken.FileName, p.curToken.LineNum, p.curToken.Type))
 		return nil
 	}
 
 	// map token type to data type
-	switch p.curToken.Type {
-	case lexer.TokenText:
-		f.dt = dataText
-	case lexer.TokenInt:
-		f.dt = dataInt
-	case lexer.TokenFloat:
-		f.dt = dataReal
-	case lexer.TokenTimestamp:
-		f.dt = dataTimestamp
-	case lexer.TokenUuid:
-		f.dt = dataUUID
-	default:
-		p.pushError(fmt.Sprintf("unsupported data type: %s", p.curToken.Literal))
+	t, ok := tokenToDataType[p.curToken.Type]
+	if !ok {
+		p.pushError(fmt.Sprintf("%s:%d; unsupported data type: %s",
+			p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
 		return nil
 	}
+	f.dt = t
+	fieldDataType := p.curToken.Type
 	p.advanceToken() // consume data type
 
-	// check for optional enums
-	if p.curToken.Type == lexer.TokenEnumOpen {
-		enums := p.parseEnums(f.dt)
-		if enums != nil {
-			f.enums = enums
+	// continue parsing annotations until newline or unexpected token
+	for {
+		switch p.curToken.Type {
+		case lexer.TokenEnumOpen:
+			enums := p.parseEnums(fieldDataType)
+			if enums != nil {
+				f.enums = enums
+			}
+		case lexer.TokenConsOpen:
+			constraints := p.parseConstraints(f.dt)
+			if constraints != nil {
+				f.constraints = constraints
+			}
+		case lexer.TokenListOpen:
+			if p.nextToken.Type != lexer.TokenListClose {
+				p.pushError(fmt.Sprintf("%s:%d; expected ], got %s",
+					p.curToken.FileName, p.curToken.LineNum, p.nextToken.Literal))
+				return nil
+			}
+		case lexer.TokenNewline:
+			p.advanceToken() // consume newline, done with field
+			return f
+		default:
+			if _, ok := lexer.AnnotationOpens[p.curToken.Type]; !ok {
+				// invalid token found where annotation was expected
+				p.pushError(fmt.Sprintf("%s:%d; unexpected token %s after data type",
+					p.curToken.FileName, p.curToken.LineNum, p.curToken.Type))
+			}
+			return f
 		}
 	}
-
-	// check for optional constraints
-	if p.curToken.Type == lexer.TokenConsOpen {
-		constraints := p.parseConstraints(f.dt)
-		if constraints != nil {
-			// no need to push any errors; I handled that in the parseConstraints func
-			f.constraints = constraints
-		}
-	}
-
-	return f
 }
 
-func (p *Parser) parseEnums(dataTypeInt dataType) []any {
+func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
+	var enums []any
 	p.advanceToken() // consume '('
 
-	var enums []any
-	expectedType := lexer.TokenString // default
-
-	// determine expected token type based on data type
-	switch dataTypeInt {
-	case dataText:
-		expectedType = lexer.TokenString
-	case dataInt:
-	case dataReal:
-		expectedType = lexer.TokenDigits
+	// make sure the data type aforehand is enumerable
+	if _, ok := enumerableTypes[fdt]; !ok {
+		p.pushError(fmt.Sprintf("%s:%d; %s doesn't support enums",
+			p.curToken.FileName, p.curToken.LineNum, fdt.String()))
+		return nil
 	}
 
-	// make sure the data type aforehand is enumerable
-	if _, ok := enumerableTypes[expectedType]; !ok {
-		p.pushError(fmt.Sprintf("%s doesn't support enums", expectedType.String()))
-		return nil
+	// keeping this as only 3 types can be enumerated... for now
+	expectedType := lexer.TokenString
+	switch fdt {
+	case lexer.TokenInt:
+		expectedType = lexer.TokenDigits
+	case lexer.TokenFloat:
+		expectedType = lexer.TokenDigitsFloat
 	}
 
 	// parse enum values until closing parenthesis
@@ -152,10 +161,13 @@ func (p *Parser) parseEnums(dataTypeInt dataType) []any {
 				value = p.curToken.Literal
 			case lexer.TokenDigits:
 				value, _ = strconv.Atoi(p.curToken.Literal)
+			case lexer.TokenDigitsFloat:
+				value, _ = strconv.ParseFloat(p.curToken.Literal, 64)
 			}
 			enums = append(enums, value)
 		} else if p.curToken.Type != lexer.TokenNewline {
-			p.pushError(fmt.Sprintf("unexpected token in enum: %s", p.curToken.Type))
+			p.pushError(fmt.Sprintf("%s:%d; unexpected token in enum: %s",
+				p.curToken.FileName, p.curToken.LineNum, p.curToken.Type))
 			return nil
 		}
 
@@ -165,7 +177,8 @@ func (p *Parser) parseEnums(dataTypeInt dataType) []any {
 	if p.curToken.Type == lexer.TokenEnumClose {
 		p.advanceToken() // consume ')'
 	} else {
-		p.pushError("unclosed enum definition")
+		p.pushError(fmt.Sprintf("%s:%d; unclosed enum definition",
+			p.curToken.FileName, p.curToken.LineNum))
 		return nil
 	}
 
@@ -185,20 +198,10 @@ func (p *Parser) parseConstraints(fieldType dataType) []constraint {
 		}
 
 		// map constraint tokens to constraint types
-		var c constraint
-		switch p.curToken.Type {
-		case lexer.TokenConstraintUnique:
-			c = consUnique
-		case lexer.TokenConstraintAutoIncrement:
-			c = consIncrement
-		case lexer.TokenConstraintPrimaryKey:
-			c = consPrimary
-		case lexer.TokenConstraintNotNull:
-			c = consRequired
-		case lexer.TokenConstraintForeignKey:
-			c = consFK
-		default:
-			p.pushError(fmt.Sprintf("unknown constraint: %s", p.curToken.Literal))
+		c, ok := tokenConstraintToConstraintType[p.curToken.Type]
+		if !ok {
+			p.pushError(fmt.Sprintf("%s:%d; unknown constraint %q",
+				p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
 			p.advanceToken()
 			continue
 		}

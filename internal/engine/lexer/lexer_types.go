@@ -2,41 +2,48 @@ package lexer
 
 // token types for lexer
 const (
-	TokenEntity                  TokenType = iota + 1 // entity
-	TokenInt                                          // int
-	TokenFloat                                        // float
-	TokenText                                         // text
-	TokenTimestamp                                    // timestamp
-	TokenUuid                                         // uuid
-	TokenRoutes                                       // routes
-	TokenAlter                                        // alter
-	TokenRef                                          // ref
-	TokenSelf                                         // self
-	TokenBool                                         // bool
-	TokenEnd                                          // end
-	TokenEndpoint                                     // /employees/:id
-	TokenArrow                                        // ->
-	TokenEnumOpen                                     // (
-	TokenEnumClose                                    // )
-	TokenListOpen                                     // [
-	TokenListClose                                    // ]
-	TokenConsOpen                                     // {
-	TokenConsClose                                    // }
-	TokenNewline                                      // \n
-	TokenDot                                          // .
-	TokenIdent                                        // identifiers like "id", "student", "payload"
-	TokenString                                       // string literals (e.g., `"male"`, `"female"`)
-	TokenDigits                                       // 123, 45.6
-	TokenGet                                          // GET
-	TokenPost                                         // POST
-	TokenPut                                          // PUT
-	TokenDelete                                       // DELETE
-	TokenComment                                      // #
-	TokenConstraintAutoIncrement                      // increment
-	TokenConstraintUnique                             // unique
-	TokenConstraintForeignKey                         // fk
-	TokenConstraintPrimaryKey                         // primary
-	TokenConstraintNotNull                            // required
+	// identifiers
+	TokenEntity    TokenType = iota + 1 // entity
+	TokenInt                            // int
+	TokenFloat                          // float
+	TokenText                           // text
+	TokenTimestamp                      // timestamp
+	TokenUuid                           // uuid
+	TokenRoutes                         // routes
+	// keywords
+	TokenAlter    // alter
+	TokenRef      // ref
+	TokenSelf     // self
+	TokenBool     // bool
+	TokenEnd      // end
+	TokenEndpoint // /employees/:id
+	// symbols
+	TokenArrow     // ->
+	TokenEnumOpen  // (
+	TokenEnumClose // )
+	TokenListOpen  // [
+	TokenListClose // ]
+	TokenConsOpen  // {
+	TokenConsClose // }
+	TokenComment   // #
+	TokenNewline   // \n
+	TokenDot       // .
+	// values
+	TokenIdent       // identifiers like "id", "student", "payload"
+	TokenString      // string literals (e.g., `"male"`, `"female"`)
+	TokenDigits      // 123
+	TokenDigitsFloat // 45.6
+	// http
+	TokenGet    // GET
+	TokenPost   // POST
+	TokenPut    // PUT
+	TokenDelete // DELETE
+	// constraints
+	TokenConstraintAutoIncrement // increment
+	TokenConstraintUnique        // unique
+	TokenConstraintForeignKey    // fk
+	TokenConstraintPrimaryKey    // primary
+	TokenConstraintNotNull       // required
 	TokenEOF
 	TokenUnknown
 )
