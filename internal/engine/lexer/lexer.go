@@ -64,6 +64,8 @@ func (l *Lexer) NextToken() Token {
 		tok = newToken(TokenEnumOpen, l.ch)
 	case ')':
 		tok = newToken(TokenEnumClose, l.ch)
+	case ':':
+		tok = newToken(TokenColon, l.ch)
 	case '-':
 		tok = l.matchOrUnknown('>', TokenArrow, TokenUnknown)
 	case '/':

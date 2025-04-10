@@ -3,13 +3,13 @@ package lexer
 // token types for lexer
 const (
 	// identifiers
-	TokenEntity    TokenType = iota + 1 // entity
-	TokenInt                            // int
-	TokenFloat                          // float
-	TokenText                           // text
-	TokenTimestamp                      // timestamp
-	TokenUuid                           // uuid
-	TokenRoutes                         // routes
+	TokenEntity        TokenType = iota + 1 // entity
+	TokenTypeInt                            // int
+	TokenTypeFloat                          // float
+	TokenTypeText                           // text
+	TokenTypeTimestamp                      // timestamp
+	TokenTypeUuid                           // uuid
+	TokenTypeRoutes                         // routes
 	// keywords
 	TokenAlter    // alter
 	TokenRef      // ref
@@ -28,8 +28,9 @@ const (
 	TokenComment   // #
 	TokenNewline   // \n
 	TokenDot       // .
+	TokenColon     // :
 	// values
-	TokenIdent       // identifiers like "id", "student", "payload"
+	TokenIdent       // identifiers like id, student, payload
 	TokenString      // string literals (e.g., `"male"`, `"female"`)
 	TokenDigits      // 123
 	TokenDigitsFloat // 45.6
@@ -44,6 +45,7 @@ const (
 	TokenConstraintForeignKey    // fk
 	TokenConstraintPrimaryKey    // primary
 	TokenConstraintNotNull       // required
+	TokenConstraintDefault       // default
 	TokenEOF
 	TokenUnknown
 )
@@ -51,12 +53,12 @@ const (
 var keywords = map[string]TokenType{
 	// normal keywords
 	"entity":    TokenEntity,
-	"float":     TokenFloat,
-	"int":       TokenInt,
-	"text":      TokenText,
-	"timestamp": TokenTimestamp,
-	"uuid":      TokenUuid,
-	"routes":    TokenRoutes,
+	"float":     TokenTypeFloat,
+	"int":       TokenTypeInt,
+	"text":      TokenTypeText,
+	"timestamp": TokenTypeTimestamp,
+	"uuid":      TokenTypeUuid,
+	"routes":    TokenTypeRoutes,
 	"alter":     TokenAlter,
 	"ref":       TokenRef,
 	"self":      TokenSelf,
@@ -69,17 +71,18 @@ var keywords = map[string]TokenType{
 	// constraints
 	"increment": TokenConstraintAutoIncrement,
 	"unique":    TokenConstraintUnique,
+	"default":   TokenConstraintDefault,
 	"fk":        TokenConstraintForeignKey,
 	"primary":   TokenConstraintPrimaryKey,
 	"required":  TokenConstraintNotNull,
 }
 
 var AllDataTypes = map[TokenType]struct{}{
-	TokenInt:       {},
-	TokenTimestamp: {},
-	TokenText:      {},
-	TokenFloat:     {},
-	TokenUuid:      {},
+	TokenTypeInt:       {},
+	TokenTypeTimestamp: {},
+	TokenTypeText:      {},
+	TokenTypeFloat:     {},
+	TokenTypeUuid:      {},
 }
 
 var allConstraints = map[TokenType]struct{}{
@@ -114,17 +117,17 @@ func (t TokenType) String() string {
 	switch t {
 	case TokenEntity:
 		return "entity"
-	case TokenFloat:
+	case TokenTypeFloat:
 		return "float"
-	case TokenInt:
+	case TokenTypeInt:
 		return "int"
-	case TokenText:
+	case TokenTypeText:
 		return "text"
-	case TokenTimestamp:
+	case TokenTypeTimestamp:
 		return "timestamp"
-	case TokenUuid:
+	case TokenTypeUuid:
 		return "uuid"
-	case TokenRoutes:
+	case TokenTypeRoutes:
 		return "routes"
 	case TokenAlter:
 		return "TokenALTER"

@@ -3,8 +3,8 @@ package parser
 import "willofdaedalus/mime/internal/engine/lexer"
 
 type (
-	dataType   int
-	constraint int
+	dataType int
+	consType int
 )
 
 const (
@@ -16,28 +16,36 @@ const (
 )
 
 const (
-	consUnique constraint = iota + 1
+	consUnique consType = iota + 1
 	consIncrement
 	consPrimary
 	consRequired
+	consDefault
+	// consEnsure
 	consFK
 )
 
 var enumerableTypes = map[lexer.TokenType]struct{}{
-	lexer.TokenText:  {},
-	lexer.TokenInt:   {},
-	lexer.TokenFloat: {},
+	lexer.TokenTypeText:  {},
+	lexer.TokenTypeInt:   {},
+	lexer.TokenTypeFloat: {},
+}
+
+var constrainableTypes = map[lexer.TokenType]struct{}{
+	lexer.TokenTypeText:  {},
+	lexer.TokenTypeInt:   {},
+	lexer.TokenTypeFloat: {},
 }
 
 var tokenToDataType = map[lexer.TokenType]dataType{
-	lexer.TokenText:      dataText,
-	lexer.TokenInt:       dataInt,
-	lexer.TokenFloat:     dataReal,
-	lexer.TokenTimestamp: dataTimestamp,
-	lexer.TokenUuid:      dataUUID,
+	lexer.TokenTypeText:      dataText,
+	lexer.TokenTypeInt:       dataInt,
+	lexer.TokenTypeFloat:     dataReal,
+	lexer.TokenTypeTimestamp: dataTimestamp,
+	lexer.TokenTypeUuid:      dataUUID,
 }
 
-var tokenConstraintToConstraintType = map[lexer.TokenType]constraint{
+var tokenToConsType = map[lexer.TokenType]consType{
 	lexer.TokenConstraintUnique:        consUnique,
 	lexer.TokenConstraintAutoIncrement: consIncrement,
 	lexer.TokenConstraintPrimaryKey:    consPrimary,
@@ -45,7 +53,11 @@ var tokenConstraintToConstraintType = map[lexer.TokenType]constraint{
 	lexer.TokenConstraintForeignKey:    consFK,
 }
 
-var typeConstraintMap = map[dataType][]constraint{
+var consWithValues = map[consType]struct{}{
+	consDefault: {},
+}
+
+var typeConstraintMap = map[dataType][]consType{
 	dataText: {
 		consUnique, consPrimary, consFK,
 	},
@@ -76,7 +88,7 @@ func (d dataType) string() string {
 	return "not checked!"
 }
 
-func (c constraint) string() string {
+func (c consType) string() string {
 	switch c {
 	case consUnique:
 		return "unique"

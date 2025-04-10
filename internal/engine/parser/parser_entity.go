@@ -12,11 +12,20 @@ type entityNode struct {
 	fields []field
 }
 
+type constraint struct {
+	kind  consType
+	value *string
+}
+
 type field struct {
 	name        string
 	dt          dataType
 	constraints []constraint
 	enums       []any
+}
+
+func (e entityNode) NodeLiteral() string {
+	return "entity"
 }
 
 func (p *Parser) parseEntity() *entityNode {
@@ -154,9 +163,9 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 	// keeping this as only 3 types can be enumerated... for now
 	expectedType := lexer.TokenString
 	switch fdt {
-	case lexer.TokenInt:
+	case lexer.TokenTypeInt:
 		expectedType = lexer.TokenDigits
-	case lexer.TokenFloat:
+	case lexer.TokenTypeFloat:
 		expectedType = lexer.TokenDigitsFloat
 	}
 
@@ -207,6 +216,16 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 	p.advanceToken() // consume '{'
 
+	// make sure the field's data type can be constrained
+	// this implementation is not exactly right since the
+	// behaviour can change at any time
+	if _, ok := constrainableTypes[fdt]; !ok {
+		p.pushError(fmt.Sprintf("%s:%d; data type %q doesn't support constraints",
+			p.curToken.FileName, p.curToken.LineNum, fdt.String()))
+		p.advanceToken()
+		return nil
+	}
+
 	var constraints []constraint
 
 	// parse constraints until closing brace
@@ -217,20 +236,54 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 		if p.curToken.Type == lexer.TokenNewline {
 			// p.advanceToken() // skip newlines
 			// continue
-			p.pushError("unclosed constraint definition")
+			p.pushError(fmt.Sprintf("%s:%d; unclosed constraint definition; expected }",
+				p.curToken.FileName, p.curToken.LineNum))
 			return nil
 		}
 
 		// map constraint tokens to constraint types
-		c, ok := tokenConstraintToConstraintType[p.curToken.Type]
+		c, ok := tokenToConsType[p.curToken.Type]
 		if !ok {
 			p.pushError(fmt.Sprintf("%s:%d; unknown constraint %q",
 				p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
 			p.advanceToken()
-			continue
+			return nil
+			// continue
+		}
+		p.advanceToken()
+
+		cons := constraint{
+			kind: c,
 		}
 
-		constraints = append(constraints, c)
+		if p.curToken.Type == lexer.TokenColon {
+			// this token has a value but first check that it's allowed to have
+			// values before processing it
+			if _, ok := consWithValues[cons.kind]; !ok {
+				p.pushError(fmt.Sprintf("%s:%d; constraint %q doesn't support values",
+					p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
+				return nil
+			}
+			p.advanceToken() // consume the :
+
+			if p.curToken.Type != lexer.TokenString {
+				p.pushError(fmt.Sprintf("%s:%d; expected a string with the value",
+					p.curToken.FileName, p.curToken.LineNum))
+				return nil
+			}
+
+			// verify that the value for default is the same data type as the
+			// field's data type otherwise that's an error
+			if !verifyConstraintValue(fdt, p.curToken.Literal) {
+				p.pushError(fmt.Sprintf("%s:%d; data type for default value doesn't match %q",
+					p.curToken.FileName, p.curToken.LineNum, fdt.String()))
+				return nil
+			}
+
+			cons.value = &p.curToken.Literal
+		}
+
+		constraints = append(constraints, cons)
 		p.advanceToken() // consume constraint
 	}
 
@@ -251,6 +304,22 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 	// }
 
 	return constraints
+}
+
+func verifyConstraintValue(fdt lexer.TokenType, v string) bool {
+	var err error
+
+	switch fdt {
+	case lexer.TokenTypeInt:
+		_, err = strconv.Atoi(v)
+	case lexer.TokenTypeFloat:
+		_, err = strconv.ParseFloat(v, 64)
+	case lexer.TokenTypeText:
+		// text by default is whatever the default value is
+		return true
+	}
+
+	return err == nil
 }
 
 // func verifyConstraints(p *Parser, fdt lexer.TokenType, cons []constraint) bool {
