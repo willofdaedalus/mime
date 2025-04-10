@@ -8,8 +8,8 @@ import (
 )
 
 type entityNode struct {
-	entityName string
-	fields     []field
+	name   string
+	fields []field
 }
 
 type field struct {
@@ -33,7 +33,7 @@ func (p *Parser) parseEntity() *entityNode {
 	}
 
 	entity := &entityNode{
-		entityName: p.curToken.Literal,
+		name: p.curToken.Literal,
 	}
 	p.advanceToken() // consume entity name
 
@@ -47,8 +47,8 @@ func (p *Parser) parseEntity() *entityNode {
 
 	// parse fields until 'end' token
 	for p.curToken.Type != lexer.TokenEnd && p.curToken.Type != lexer.TokenEOF {
-		if p.curToken.Type == lexer.TokenNewline {
-			p.advanceToken() // skip newlines
+		if p.curToken.Type == lexer.TokenNewline || p.curToken.Type == lexer.TokenComment {
+			p.advanceToken() // skip newlines and comments
 			continue
 		}
 
@@ -61,6 +61,10 @@ func (p *Parser) parseEntity() *entityNode {
 
 	if p.curToken.Type == lexer.TokenEnd {
 		p.advanceToken() // consume 'end'
+	} else {
+		p.pushError(fmt.Sprintf("%s:%d; expected end keyword at end of entity definition",
+			p.curToken.FileName, p.curToken.LineNum))
+		return nil
 	}
 
 	return entity
@@ -111,10 +115,12 @@ func (p *Parser) parseField() *field {
 			}
 			f.enums = enums
 		case lexer.TokenConsOpen:
-			constraints := p.parseConstraints(f.dt)
-			if constraints != nil {
-				f.constraints = constraints
+			// returning nil because the user specified a constraint and didn't finish
+			constraints := p.parseConstraints(fieldDataType)
+			if constraints == nil {
+				return nil
 			}
+			f.constraints = constraints
 		case lexer.TokenListOpen:
 			if p.nextToken.Type != lexer.TokenListClose {
 				p.pushError(fmt.Sprintf("%s:%d; expected ], got %s",
@@ -175,8 +181,13 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 
 		// on mismatched data type return nil immediately; don't waste
 		// resources processing what we won't return
-		p.pushError(fmt.Sprintf("%s:%d; unexpected type in enum: %s",
-			p.curToken.FileName, p.curToken.LineNum, p.curToken.Type.String()))
+		errMsg := fmt.Sprintf("%s:%d; unexpected type in enum: %s",
+			p.curToken.FileName, p.curToken.LineNum, p.curToken.Type.String())
+		if p.curToken.Type == lexer.TokenNewline {
+			errMsg = fmt.Sprintf("%s:%d; unclosed enum definition: expected )",
+				p.curToken.FileName, p.curToken.LineNum)
+		}
+		p.pushError(errMsg)
 		return nil
 	}
 
@@ -191,16 +202,23 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 	return enums
 }
 
-func (p *Parser) parseConstraints(fieldType dataType) []constraint {
+// for now we only support constraints without values so something like
+// default wouldn't work
+func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 	p.advanceToken() // consume '{'
 
 	var constraints []constraint
 
 	// parse constraints until closing brace
+	// NOTE; we should probably make sure to check against newline token
 	for p.curToken.Type != lexer.TokenConsClose && p.curToken.Type != lexer.TokenEOF {
+		// any newline while parsing some constraints or enums or list is considered
+		// an error and should be treated as such
 		if p.curToken.Type == lexer.TokenNewline {
-			p.advanceToken() // skip newlines
-			continue
+			// p.advanceToken() // skip newlines
+			// continue
+			p.pushError("unclosed constraint definition")
+			return nil
 		}
 
 		// map constraint tokens to constraint types
@@ -218,33 +236,34 @@ func (p *Parser) parseConstraints(fieldType dataType) []constraint {
 
 	if p.curToken.Type == lexer.TokenConsClose {
 		p.advanceToken() // consume '}'
-	} else {
-		p.pushError("unclosed constraint definition")
-		return nil
 	}
+	// else {
+	// 	p.pushError("unclosed constraint definition")
+	// 	return nil
+	// }
 
-	if verifyConstraints(p, fieldType, constraints) {
-		// NOTE!
-		// make checks to ensure super constraints have precedence
-		// over other constraints;
-		// eg primary is basically unique, autoincrement and not_null
-		return constraints
-	}
+	// if verifyConstraints(p, fdt, constraints) {
+	// 	// NOTE!
+	// 	// make checks to ensure super constraints have precedence
+	// 	// over other constraints;
+	// 	// eg primary is basically unique, autoincrement and not_null
+	// 	return constraints
+	// }
 
-	return nil
+	return constraints
 }
 
-func verifyConstraints(p *Parser, fdataType dataType, cons []constraint) bool {
-	hasInvalid := false
-	if len(cons) > 0 {
-		for i := range cons {
-			if _, ok := typeConstraintMap[fdataType]; !ok {
-				hasInvalid = true
-				p.pushError(fmt.Sprintf("%s doesn't support constraint %s",
-					fdataType.string(), cons[i].string()))
-			}
-		}
-	}
-
-	return !hasInvalid
-}
+// func verifyConstraints(p *Parser, fdt lexer.TokenType, cons []constraint) bool {
+// 	hasInvalid := false
+// 	if len(cons) > 0 {
+// 		for i := range cons {
+// 			if _, ok := typeConstraintMap[fdt]; !ok {
+// 				hasInvalid = true
+// 				p.pushError(fmt.Sprintf("%s doesn't support constraint %s",
+// 					fdt.string(), cons[i].string()))
+// 			}
+// 		}
+// 	}
+//
+// 	return !hasInvalid
+// }
