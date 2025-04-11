@@ -116,53 +116,85 @@ func lookUpIdent(ident string) TokenType {
 func (t TokenType) String() string {
 	switch t {
 	case TokenEntity:
-		return "entity"
-	case TokenTypeFloat:
-		return "float"
+		return "TOKEN_entity"
 	case TokenTypeInt:
-		return "int"
+		return "TOKEN_int"
+	case TokenTypeFloat:
+		return "TOKEN_float"
 	case TokenTypeText:
-		return "text"
+		return "TOKEN_text"
 	case TokenTypeTimestamp:
-		return "timestamp"
+		return "TOKEN_timestamp"
 	case TokenTypeUuid:
-		return "uuid"
+		return "TOKEN_uuid"
 	case TokenTypeRoutes:
-		return "routes"
+		return "TOKEN_routes"
 	case TokenAlter:
-		return "TokenALTER"
+		return "TOKEN_alter"
 	case TokenRef:
-		return "TokenREF"
+		return "TOKEN_ref"
 	case TokenSelf:
-		return "TokenSELF"
+		return "TOKEN_self"
 	case TokenBool:
-		return "TokenBOOL"
+		return "TOKEN_bool"
+	case TokenEnd:
+		return "TOKEN_end"
 	case TokenEndpoint:
-		return "TokenENDPOINT"
+		return "TOKEN_endpoint"
 	case TokenArrow:
-		return "TokenARROW"
+		return "TOKEN_arrow"
+	case TokenEnumOpen:
+		return "TOKEN_enumopen"
+	case TokenEnumClose:
+		return "TOKEN_enumclose"
 	case TokenListOpen:
-		return "TokenLBRACKET"
+		return "TOKEN_listopen"
 	case TokenListClose:
-		return "TokenRBRACKET"
+		return "TOKEN_listclose"
 	case TokenConsOpen:
-		return "TokenLBRACE"
+		return "TOKEN_consopen"
 	case TokenConsClose:
-		return "TokenRBRACE"
+		return "TOKEN_consclose"
+	case TokenComment:
+		return "TOKEN_comment"
 	case TokenNewline:
-		return "TokenNEWLINE"
+		return "TOKEN_newline"
 	case TokenDot:
-		return "TokenDOT"
+		return "TOKEN_dot"
+	case TokenColon:
+		return "TOKEN_colon"
 	case TokenIdent:
-		return "TokenIDENT"
+		return "TOKEN_ident"
 	case TokenString:
-		return "TokenSTRING"
+		return "TOKEN_string"
 	case TokenDigits:
-		return "TokenDIGITS"
+		return "TOKEN_digits"
+	case TokenDigitsFloat:
+		return "TOKEN_digitsfloat"
+	case TokenGet:
+		return "TOKEN_get"
+	case TokenPost:
+		return "TOKEN_post"
+	case TokenPut:
+		return "TOKEN_put"
+	case TokenDelete:
+		return "TOKEN_delete"
+	case TokenConstraintAutoIncrement:
+		return "TOKEN_autoincrement"
+	case TokenConstraintUnique:
+		return "TOKEN_unique"
+	case TokenConstraintForeignKey:
+		return "TOKEN_foreignkey"
+	case TokenConstraintPrimaryKey:
+		return "TOKEN_primarykey"
+	case TokenConstraintNotNull:
+		return "TOKEN_required"
+	case TokenConstraintDefault:
+		return "TOKEN_default"
 	case TokenEOF:
-		return "TokenEOF"
+		return "TOKEN_eof"
 	case TokenUnknown:
-		return "TokenUNKNOWN"
+		return "TOKEN_unknown"
 	default:
 		return "Unknown token type"
 	}

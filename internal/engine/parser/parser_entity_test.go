@@ -37,7 +37,7 @@ end something`,
 			name: "duplicated field names",
 			input: `entity user ->
   name text
-  name number
+  name int
 end`,
 			expected: nil,
 		},
@@ -53,7 +53,7 @@ end`,
 			input: `entity user ->
   name text
   @
-  age number
+  age int
 end`,
 			expected: nil,
 		},
@@ -195,11 +195,6 @@ end`,
 			name: "empty field list with comments",
 			input: `entity user ->
   # this is a comment
-  # this is a comment
-  # this is a comment
-  # this is a comment
-  # this is a comment
-  # this is a comment
 end`,
 			expected: &entityNode{
 				name:   "user",
@@ -209,7 +204,7 @@ end`,
 		{
 			name: "invalid modifier syntax",
 			input: `entity user ->
-  age number { default:18 ensure:"age > 0" }
+  age timestamp { default:18 }
 end`,
 			expected: nil, // unquoted default value should fail
 		},
@@ -223,7 +218,7 @@ end`,
 		{
 			name: "unterminated modifier block",
 			input: `entity user ->
-  id number { increment
+  id int { increment
 end`,
 			expected: nil,
 		},
@@ -309,4 +304,292 @@ end`,
 			}
 		})
 	}
+}
+
+func TestParseEntityConstraints(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected *entityNode
+	}{
+		{
+			name: "simple constraint - unique",
+			input: `entity user ->
+  id int {unique}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "id",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consUnique},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple constraints on one field",
+			input: `entity user ->
+  id int {unique required}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "id",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consUnique},
+							{kind: consRequired},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "primary key constraint",
+			input: `entity user ->
+  id int {primary}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "id",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consPrimary},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "autoincrement constraint",
+			input: `entity user ->
+  id int {increment}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "id",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consIncrement},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default constraint with value",
+			input: `entity user ->
+  active int {default:"1"}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "active",
+						dt:   dataInt,
+						constraints: []constraint{
+							{
+								kind:  consDefault,
+								value: stringPtr("1"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default constraint for text field",
+			input: `entity user ->
+  status text {default:"active"}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "status",
+						dt:   dataText,
+						constraints: []constraint{
+							{
+								kind:  consDefault,
+								value: stringPtr("active"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "foreign key constraint",
+			input: `entity post ->
+  user_id int {fk}
+end`,
+			expected: &entityNode{
+				name: "post",
+				fields: []field{
+					{
+						name: "user_id",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consFK},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "unclosed constraint",
+			input: `entity user ->
+  id int {unique
+end`,
+			expected: nil,
+		},
+		{
+			name: "invalid constraint",
+			input: `entity user ->
+  id int {unknown}
+end`,
+			expected: nil,
+		},
+		{
+			name: "constraint on unsupported type",
+			input: `entity user ->
+  created_at timestamp {unique}
+end`,
+			expected: nil,
+		},
+		{
+			name: "constraint with missing value",
+			input: `entity user ->
+  status text {default:}
+end`,
+			expected: nil,
+		},
+		{
+			name: "constraint with value on constraint that doesn't support values",
+			input: `entity user ->
+  id int {unique:"yes"}
+end`,
+			expected: nil,
+		},
+		{
+			name: "type mismatch in default value",
+			input: `entity user ->
+  age int {default:"not-a-int"}
+end`,
+			expected: nil,
+		},
+		{
+			name: "multiple constraints with a default value",
+			input: `entity user ->
+  age int {required default:"18"}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "age",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consRequired},
+							{
+								kind:  consDefault,
+								value: stringPtr("18"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "constraints with enum",
+			input: `entity user ->
+  role text ("admin" "user") {default:"user"}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name:  "role",
+						dt:    dataText,
+						enums: []any{"admin", "user"},
+						constraints: []constraint{
+							{
+								kind:  consDefault,
+								value: stringPtr("user"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "newline within constraint block",
+			input: `entity user ->
+  id int {
+    primary
+  }
+end`,
+			expected: nil,
+		},
+		{
+			name: "constraint with unexpected tokens",
+			input: `entity user ->
+  id int {primary 123}
+end`,
+			expected: nil,
+		},
+		{
+			name: "default constraint with improper value for float",
+			input: `entity user ->
+  balance float {default:"abc"}
+end`,
+			expected: nil,
+		},
+		{
+			name: "default constraint with proper value for float",
+			input: `entity user ->
+  balance float {default:"123.45"}
+end`,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "balance",
+						dt:   dataReal,
+						constraints: []constraint{
+							{
+								kind:  consDefault,
+								value: stringPtr("123.45"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser(lexer.New(tt.input))
+			actual := p.parseEntity()
+
+			if !reflect.DeepEqual(actual, tt.expected) {
+				t.Fatalf("for %s:\nexpected:\n%v\ngot:\n%v", tt.name, tt.expected, actual)
+			}
+		})
+	}
+}
+
+// Helper function to create string pointers for the tests
+func stringPtr(s string) *string {
+	return &s
 }
