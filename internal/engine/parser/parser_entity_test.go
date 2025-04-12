@@ -39,7 +39,19 @@ end something`,
   name text
   name int
 end`,
-			expected: nil,
+			expected: &entityNode{
+				name: "user",
+				fields: []field{
+					{
+						name: "name",
+						dt:   dataText,
+					},
+					{
+						name: "name",
+						dt:   dataInt,
+					},
+				},
+			},
 		},
 		{
 			name: "empty enum list",
@@ -315,8 +327,8 @@ func TestParseEntityConstraints(t *testing.T) {
 		{
 			name: "simple constraint - unique",
 			input: `entity user ->
-  id int {unique}
-end`,
+			id int {unique fk}
+		end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -325,6 +337,7 @@ end`,
 						dt:   dataInt,
 						constraints: []constraint{
 							{kind: consUnique},
+							{kind: consFK},
 						},
 					},
 				},
@@ -333,8 +346,8 @@ end`,
 		{
 			name: "multiple constraints on one field",
 			input: `entity user ->
-  id int {unique required}
-end`,
+		  id int {unique required}
+		end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -352,8 +365,8 @@ end`,
 		{
 			name: "primary key constraint",
 			input: `entity user ->
-  id int {primary}
-end`,
+			  id int {primary}
+			end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -370,8 +383,8 @@ end`,
 		{
 			name: "autoincrement constraint",
 			input: `entity user ->
-  id int {increment}
-end`,
+			  id int {increment}
+			end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -386,10 +399,84 @@ end`,
 			},
 		},
 		{
+			name: "constraint with unexpected tokens",
+			input: `entity user ->
+			  id int {primary 123}
+			end`,
+			expected: nil,
+		},
+		{
+			name: "default constraint with improper value for float",
+			input: `entity user ->
+			  balance float {default:"abc"}
+			end`,
+			expected: nil,
+		},
+		{
+			name: "foreign key constraint",
+			input: `entity post ->
+			  user_id int {fk}
+			end`,
+			expected: &entityNode{
+				name: "post",
+				fields: []field{
+					{
+						name: "user_id",
+						dt:   dataInt,
+						constraints: []constraint{
+							{kind: consFK},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "unclosed constraint",
+			input: `entity user ->
+			  id int {unique
+			end`,
+			expected: nil,
+		},
+		{
+			name: "invalid constraint",
+			input: `entity user ->
+			  id int {unknown}
+			end`,
+			expected: nil,
+		},
+		{
+			name: "constraint on unsupported type",
+			input: `entity user ->
+			  created_at timestamp {unique}
+			end`,
+			expected: nil,
+		},
+		{
+			name: "constraint with missing value",
+			input: `entity user ->
+			  status text {default:}
+			end`,
+			expected: nil,
+		},
+		{
+			name: "constraint with value on constraint that doesn't support values",
+			input: `entity user ->
+			  id int {unique:"yes"}
+			end`,
+			expected: nil,
+		},
+		{
+			name: "type mismatch in default value",
+			input: `entity user ->
+			  age int {default:"not-a-int"}
+			end`,
+			expected: nil,
+		},
+		{
 			name: "default constraint with value",
 			input: `entity user ->
-  active int {default:"1"}
-end`,
+			active int {default:"1"}
+		end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -409,8 +496,8 @@ end`,
 		{
 			name: "default constraint for text field",
 			input: `entity user ->
-  status text {default:"active"}
-end`,
+			  status text {default:"active"}
+			end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -428,70 +515,10 @@ end`,
 			},
 		},
 		{
-			name: "foreign key constraint",
-			input: `entity post ->
-  user_id int {fk}
-end`,
-			expected: &entityNode{
-				name: "post",
-				fields: []field{
-					{
-						name: "user_id",
-						dt:   dataInt,
-						constraints: []constraint{
-							{kind: consFK},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "unclosed constraint",
-			input: `entity user ->
-  id int {unique
-end`,
-			expected: nil,
-		},
-		{
-			name: "invalid constraint",
-			input: `entity user ->
-  id int {unknown}
-end`,
-			expected: nil,
-		},
-		{
-			name: "constraint on unsupported type",
-			input: `entity user ->
-  created_at timestamp {unique}
-end`,
-			expected: nil,
-		},
-		{
-			name: "constraint with missing value",
-			input: `entity user ->
-  status text {default:}
-end`,
-			expected: nil,
-		},
-		{
-			name: "constraint with value on constraint that doesn't support values",
-			input: `entity user ->
-  id int {unique:"yes"}
-end`,
-			expected: nil,
-		},
-		{
-			name: "type mismatch in default value",
-			input: `entity user ->
-  age int {default:"not-a-int"}
-end`,
-			expected: nil,
-		},
-		{
 			name: "multiple constraints with a default value",
 			input: `entity user ->
-  age int {required default:"18"}
-end`,
+			  age int {required default:"18"}
+			end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -512,8 +539,8 @@ end`,
 		{
 			name: "constraints with enum",
 			input: `entity user ->
-  role text ("admin" "user") {default:"user"}
-end`,
+			  role text ("admin" "user") {unique}
+			end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
@@ -523,8 +550,7 @@ end`,
 						enums: []any{"admin", "user"},
 						constraints: []constraint{
 							{
-								kind:  consDefault,
-								value: stringPtr("user"),
+								kind: consUnique,
 							},
 						},
 					},
@@ -534,31 +560,17 @@ end`,
 		{
 			name: "newline within constraint block",
 			input: `entity user ->
-  id int {
-    primary
-  }
-end`,
-			expected: nil,
-		},
-		{
-			name: "constraint with unexpected tokens",
-			input: `entity user ->
-  id int {primary 123}
-end`,
-			expected: nil,
-		},
-		{
-			name: "default constraint with improper value for float",
-			input: `entity user ->
-  balance float {default:"abc"}
-end`,
+			  id int {
+			    primary
+			  }
+			end`,
 			expected: nil,
 		},
 		{
 			name: "default constraint with proper value for float",
 			input: `entity user ->
-  balance float {default:"123.45"}
-end`,
+			  balance float {default:"123.45"}
+			end`,
 			expected: &entityNode{
 				name: "user",
 				fields: []field{
