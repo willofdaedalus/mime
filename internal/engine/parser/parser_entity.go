@@ -124,9 +124,9 @@ func (p *Parser) parseField() *field {
 			}
 			f.enums = enums
 		case lexer.TokenConsOpen:
-			// returning nil because the user specified a constraint and didn't finish
 			constraints := p.parseConstraints(fieldDataType)
 			if constraints == nil {
+				// returning nil because the user specified a constraint and didn't finish
 				return nil
 			}
 			f.constraints = constraints
@@ -211,97 +211,75 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 	return enums
 }
 
-// for now we only support constraints without values so something like
-// default wouldn't work
 func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
-	p.advanceToken() // consume '{'
+	var constraints []constraint
 
-	// make sure the field's data type can be constrained
-	// this implementation is not exactly right since the
-	// behaviour can change at any time
+	// Make sure the field's data type can be constrained
 	if _, ok := constrainableTypes[fdt]; !ok {
 		p.pushError(fmt.Sprintf("%s:%d; data type %q doesn't support constraints",
 			p.curToken.FileName, p.curToken.LineNum, fdt.String()))
-		p.advanceToken()
 		return nil
 	}
 
-	var constraints []constraint
+	p.advanceToken() // consume '{'
 
-	// parse constraints until closing brace
-	// NOTE; we should probably make sure to check against newline token
+	// Parse constraints until closing brace or EOF
 	for p.curToken.Type != lexer.TokenConsClose && p.curToken.Type != lexer.TokenEOF {
-		// any newline while parsing some constraints or enums or list is considered
-		// an error and should be treated as such
 		if p.curToken.Type == lexer.TokenNewline {
-			// p.advanceToken() // skip newlines
-			// continue
-			p.pushError(fmt.Sprintf("%s:%d; unclosed constraint definition; expected }",
+			p.pushError(fmt.Sprintf("%s:%d; unexpected newline in constraint definition",
 				p.curToken.FileName, p.curToken.LineNum))
 			return nil
 		}
 
-		// map constraint tokens to constraint types
+		// Map constraint tokens to constraint types
 		c, ok := tokenToConsType[p.curToken.Type]
 		if !ok {
 			p.pushError(fmt.Sprintf("%s:%d; unknown constraint %q",
 				p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
 			p.advanceToken()
 			return nil
-			// continue
 		}
-		p.advanceToken()
+		p.advanceToken() // consume constraint token
 
 		cons := constraint{
 			kind: c,
 		}
 
+		// Check if constraint requires a value (e.g., default value)
 		if p.curToken.Type == lexer.TokenColon {
-			// this token has a value but first check that it's allowed to have
-			// values before processing it
 			if _, ok := consWithValues[cons.kind]; !ok {
 				p.pushError(fmt.Sprintf("%s:%d; constraint %q doesn't support values",
 					p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
 				return nil
 			}
-			p.advanceToken() // consume the :
+			p.advanceToken() // consume the colon
 
 			if p.curToken.Type != lexer.TokenString {
-				p.pushError(fmt.Sprintf("%s:%d; expected a string with the value",
+				p.pushError(fmt.Sprintf("%s:%d; expected a string for constraint value",
 					p.curToken.FileName, p.curToken.LineNum))
 				return nil
 			}
 
-			// verify that the value for default is the same data type as the
-			// field's data type otherwise that's an error
+			// Verify that the value matches the field's data type
 			if !verifyConstraintValue(fdt, p.curToken.Literal) {
-				p.pushError(fmt.Sprintf("%s:%d; data type for default value doesn't match %q",
+				p.pushError(fmt.Sprintf("%s:%d; data type for constraint value doesn't match %q",
 					p.curToken.FileName, p.curToken.LineNum, fdt.String()))
 				return nil
 			}
 
+			// Set the value for the constraint
 			cons.value = &p.curToken.Literal
+			p.advanceToken() // consume value token
 		}
 
+		// Append the parsed constraint
 		constraints = append(constraints, cons)
-		p.advanceToken() // consume constraint
 	}
 
+	// Consume the closing brace
 	if p.curToken.Type == lexer.TokenConsClose {
 		p.advanceToken() // consume '}'
 	}
-	// else {
-	// 	p.pushError("unclosed constraint definition")
-	// 	return nil
-	// }
-
-	// if verifyConstraints(p, fdt, constraints) {
-	// 	// NOTE!
-	// 	// make checks to ensure super constraints have precedence
-	// 	// over other constraints;
-	// 	// eg primary is basically unique, autoincrement and not_null
-	// 	return constraints
-	// }
 
 	return constraints
 }

@@ -3,6 +3,7 @@
 package lexer
 
 import (
+	"fmt"
 	"unicode"
 )
 
@@ -40,6 +41,15 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
+func (l Lexer) RenderTokens() {
+	tok := l.NextToken()
+
+	for tok.Type != TokenEOF {
+		fmt.Printf("%v\n", tok)
+		tok = l.NextToken()
+	}
+}
+
 func (l *Lexer) NextToken() Token {
 	var tok Token
 
@@ -75,6 +85,8 @@ func (l *Lexer) NextToken() Token {
 			return tok
 		}
 		tok = newToken(TokenUnknown, l.ch)
+	case '\n':
+		tok = newToken(TokenNewline, l.ch)
 	case '"':
 		tok.Type = TokenString
 		tok.Literal = l.readString()
