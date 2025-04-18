@@ -50,7 +50,7 @@ const (
 	TokenUnknown
 )
 
-var keywords = map[string]TokenType{
+var Keywords = map[string]TokenType{
 	// normal keywords
 	"entity":    TokenEntity,
 	"float":     TokenTypeFloat,
@@ -105,7 +105,7 @@ func IsValidMemberOf(tt TokenType, list map[TokenType]struct{}) bool {
 }
 
 func lookUpIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
+	if tok, ok := Keywords[ident]; ok {
 		return tok
 	}
 

@@ -39,19 +39,7 @@ end something`,
   name text
   name int
 end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []field{
-					{
-						name: "name",
-						dt:   dataText,
-					},
-					{
-						name: "name",
-						dt:   dataInt,
-					},
-				},
-			},
+			expected: nil,
 		},
 		{
 			name: "empty enum list",

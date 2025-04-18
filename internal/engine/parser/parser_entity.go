@@ -76,6 +76,13 @@ func (p *Parser) parseEntity() *entityNode {
 		return nil
 	}
 
+	if err := entity.cleanupEntity(); err != nil {
+		for _, e := range err {
+			fmt.Println("err for", entity.name, e.Error())
+		}
+		return nil
+	}
+
 	return entity
 }
 
@@ -300,17 +307,63 @@ func verifyConstraintValue(fdt lexer.TokenType, v string) bool {
 	return err == nil
 }
 
-// func verifyConstraints(p *Parser, fdt lexer.TokenType, cons []constraint) bool {
-// 	hasInvalid := false
-// 	if len(cons) > 0 {
-// 		for i := range cons {
-// 			if _, ok := typeConstraintMap[fdt]; !ok {
-// 				hasInvalid = true
-// 				p.pushError(fmt.Sprintf("%s doesn't support constraint %s",
-// 					fdt.string(), cons[i].string()))
-// 			}
-// 		}
-// 	}
-//
-// 	return !hasInvalid
-// }
+func (e *entityNode) cleanupEntity() []error {
+	errs := make([]error, 0)
+	validFields := make(map[string]struct{}, 0)
+
+	for _, f := range e.fields {
+		fieldName := f.name
+
+		if _, ok := validFields[fieldName]; ok {
+			errs = append(errs, fmt.Errorf("duplicate field name %q", fieldName))
+		} else if _, ok := lexer.Keywords[fieldName]; ok {
+			errs = append(errs, fmt.Errorf("field name %q is a reserved keyword", fieldName))
+		} else {
+			validFields[fieldName] = struct{}{}
+		}
+
+		if len(f.constraints) > 0 {
+			errs = append(errs, verifyConstraints(f.constraints)...)
+		}
+
+		if len(f.enums) > 0 {
+			errs = append(errs, verifyEnums(f.enums)...)
+		}
+	}
+
+	if len(errs) > 0 {
+		return errs
+	}
+
+	return nil
+}
+
+func verifyConstraints(cons []constraint) []error {
+	errs := make([]error, 0)
+	seenConstraints := make(map[consType]struct{}, 0)
+
+	for _, c := range cons {
+		if _, ok := seenConstraints[c.kind]; ok {
+			errs = append(errs, fmt.Errorf("duplicate constraint %q", c.kind.string()))
+			continue
+		}
+		seenConstraints[c.kind] = struct{}{}
+	}
+
+	return errs
+}
+
+func verifyEnums(enums []any) []error {
+	errs := make([]error, 0)
+	seenEnums := make(map[any]struct{}, 0)
+
+	for _, enum := range enums {
+		if _, ok := seenEnums[enum]; ok {
+			errs = append(errs, fmt.Errorf("duplicate enum value %v", enum))
+			continue
+		}
+		seenEnums[enum] = struct{}{}
+	}
+
+	return errs
+}

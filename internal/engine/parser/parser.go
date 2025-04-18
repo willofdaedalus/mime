@@ -7,11 +7,17 @@ import (
 	"willofdaedalus/mime/internal/engine/lexer"
 )
 
+type node interface {
+	// this will serve as the node's identifier
+	NodeLiteral() string
+}
+
 type Parser struct {
 	lex       *lexer.Lexer
 	curToken  lexer.Token
 	nextToken lexer.Token
-	errs      []error
+	errors    []error
+	nodes     []node
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
@@ -36,10 +42,13 @@ func (p *Parser) ParseTokens() {
 		switch p.curToken.Type {
 		case lexer.TokenEntity:
 			p.advanceToken()
+			// NOTES;
+			// * remember to check that the entity has fields
 			entity := p.parseEntity()
 			if entity != nil {
-				// Store the entity or process it further
+				p.nodes = append(p.nodes, entity)
 			}
+
 		// case lexer.TokenAlter:
 		// 	// Handle alter statements
 		// 	p.parseAlter()
@@ -56,6 +65,9 @@ func (p *Parser) ParseTokens() {
 	}
 }
 
+func verifyEntity() {
+}
+
 func (p *Parser) pushError(msg string) {
-	p.errs = append(p.errs, errors.New(msg))
+	p.errors = append(p.errors, errors.New(msg))
 }

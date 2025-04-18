@@ -1,6 +1,10 @@
 package parser
 
-import "willofdaedalus/mime/internal/engine/lexer"
+import (
+	"fmt"
+
+	"willofdaedalus/mime/internal/engine/lexer"
+)
 
 type (
 	dataType int
@@ -51,6 +55,7 @@ var tokenToConsType = map[lexer.TokenType]consType{
 	lexer.TokenConstraintPrimaryKey:    consPrimary,
 	lexer.TokenConstraintNotNull:       consRequired,
 	lexer.TokenConstraintForeignKey:    consFK,
+	lexer.TokenConstraintDefault:       consDefault,
 }
 
 var consWithValues = map[consType]struct{}{
@@ -85,7 +90,7 @@ func (d dataType) string() string {
 	case dataUUID:
 		return "uuid"
 	}
-	return "not checked!"
+	return fmt.Sprintf("%d not checked", d)
 }
 
 func (c consType) string() string {
@@ -100,6 +105,8 @@ func (c consType) string() string {
 		return "required"
 	case consFK:
 		return "fk"
+	case consDefault:
+		return "default"
 	}
-	return "not checked!"
+	return fmt.Sprintf("%d", c)
 }
