@@ -1,0 +1,8 @@
+* constraint rules
+# default
+	* for default if the value is an empty string reject the notion
+
+entity clean up checklist
+* look through all enums if there are any; if there are any duplicates
+  find and alert the user
+* look 
