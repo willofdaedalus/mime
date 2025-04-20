@@ -7,8 +7,15 @@ import (
 )
 
 type (
-	dataType int
-	consType int
+	dataType  int
+	consType  uint8
+	fieldFlag uint8
+)
+
+const (
+	flagPayload  fieldFlag = 1 << 0
+	flagResponse           = 1 << 1
+	flagNullable           = 1 << 2
 )
 
 const (
@@ -21,13 +28,14 @@ const (
 )
 
 const (
-	consUnique consType = iota + 1
+	consNone consType = 1<<iota - 1
+	consUnique
 	consIncrement
 	consPrimary
 	consRequired
 	consDefault
-	// consEnsure
 	consFK
+	// consEnsure
 )
 
 var payloadFriendly = map[dataType]struct{}{
