@@ -282,7 +282,6 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) *constraintInfo {
 			p.advanceToken()
 			return nil
 		}
-		p.advanceToken() // consume constraint token
 
 		// we found a duplicate constraint; fail fast
 		if result.kind&c != 0 {
@@ -293,6 +292,8 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) *constraintInfo {
 
 		// assign the valid constype to the result if not a duplicate
 		result.kind |= c
+		fmt.Printf("added %s", p.curToken.Literal)
+		p.advanceToken() // consume constraint token
 
 		// check if constraint requires a value (e.g., default value)
 		if p.curToken.Type == lexer.TokenColon {

@@ -27,9 +27,9 @@ const (
 	dataTimestamp
 )
 
+const consNone consType = 0
 const (
-	consNone consType = 1<<iota - 1
-	consUnique
+	consUnique consType = 1 << iota
 	consIncrement
 	consPrimary
 	consRequired

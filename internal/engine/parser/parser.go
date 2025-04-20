@@ -65,9 +65,7 @@ func (p *Parser) ParseTokens() {
 	}
 }
 
-func verifyEntity() {
-}
-
 func (p *Parser) pushError(msg string) {
+	// fmt.Println(msg)
 	p.errors = append(p.errors, errors.New(msg))
 }
