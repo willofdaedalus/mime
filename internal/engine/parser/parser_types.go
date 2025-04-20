@@ -14,9 +14,10 @@ type (
 const (
 	dataText dataType = iota + 1
 	dataInt
+	dataBool
 	dataReal
-	dataTimestamp
 	dataUUID
+	dataTimestamp
 )
 
 const (
@@ -29,6 +30,14 @@ const (
 	consFK
 )
 
+var payloadFriendly = map[dataType]struct{}{
+	dataInt:  {},
+	dataBool: {},
+	dataReal: {},
+	dataUUID: {},
+	dataText: {},
+}
+
 var enumerableTypes = map[lexer.TokenType]struct{}{
 	lexer.TokenTypeText:  {},
 	lexer.TokenTypeInt:   {},
@@ -36,8 +45,9 @@ var enumerableTypes = map[lexer.TokenType]struct{}{
 }
 
 var constrainableTypes = map[lexer.TokenType]struct{}{
-	lexer.TokenTypeText:  {},
 	lexer.TokenTypeInt:   {},
+	lexer.TokenTypeText:  {},
+	lexer.TokenTypeBool:  {},
 	lexer.TokenTypeFloat: {},
 }
 
@@ -47,6 +57,7 @@ var tokenToDataType = map[lexer.TokenType]dataType{
 	lexer.TokenTypeFloat:     dataReal,
 	lexer.TokenTypeTimestamp: dataTimestamp,
 	lexer.TokenTypeUuid:      dataUUID,
+	lexer.TokenTypeBool:      dataBool,
 }
 
 var tokenToConsType = map[lexer.TokenType]consType{
@@ -77,7 +88,7 @@ var typeConstraintMap = map[dataType][]consType{
 	},
 }
 
-func (d dataType) string() string {
+func (d dataType) String() string {
 	switch d {
 	case dataText:
 		return "text"
@@ -93,7 +104,7 @@ func (d dataType) string() string {
 	return fmt.Sprintf("%d not checked", d)
 }
 
-func (c consType) string() string {
+func (c consType) String() string {
 	switch c {
 	case consUnique:
 		return "unique"

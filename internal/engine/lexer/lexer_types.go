@@ -3,18 +3,19 @@ package lexer
 // token types for lexer
 const (
 	// identifiers
-	TokenEntity        TokenType = iota + 1 // entity
-	TokenTypeInt                            // int
-	TokenTypeFloat                          // float
-	TokenTypeText                           // text
-	TokenTypeTimestamp                      // timestamp
-	TokenTypeUuid                           // uuid
-	TokenTypeRoutes                         // routes
+	TokenEntity TokenType = iota + 1 // entity
+
+	TokenTypeInt       // int
+	TokenTypeFloat     // float
+	TokenTypeText      // text
+	TokenTypeBool      // bool
+	TokenTypeTimestamp // timestamp
+	TokenTypeUuid      // uuid
+	TokenTypeRoutes    // routes
 	// keywords
 	TokenAlter    // alter
 	TokenRef      // ref
 	TokenSelf     // self
-	TokenBool     // bool
 	TokenEnd      // end
 	TokenEndpoint // /employees/:id
 	// symbols
@@ -135,7 +136,7 @@ func (t TokenType) String() string {
 		return "TOKEN_ref"
 	case TokenSelf:
 		return "TOKEN_self"
-	case TokenBool:
+	case TokenTypeBool:
 		return "TOKEN_bool"
 	case TokenEnd:
 		return "TOKEN_end"

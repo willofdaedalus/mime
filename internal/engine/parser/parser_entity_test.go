@@ -20,7 +20,7 @@ func TestParseEntity(t *testing.T) {
 end something`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name:        "name",
 						dt:          dataText,
@@ -67,7 +67,7 @@ entity post ->
 end`,
 			expected: &entityNode{ // optional: only if you're parsing one at a time
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{name: "name", dt: dataText},
 				},
 			},
@@ -140,7 +140,7 @@ end`,
 end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{name: "name", dt: dataText},
 				},
 			},
@@ -153,7 +153,7 @@ end`,
 end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{name: "full_name", dt: dataText},
 					{name: "date_of_birth", dt: dataTimestamp},
 				},
@@ -169,7 +169,7 @@ end`,
 end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{name: "name", dt: dataText},
 					{name: "age", dt: dataInt},
 				},
@@ -182,7 +182,7 @@ end`,
 end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name:  "status",
 						dt:    dataText,
@@ -235,7 +235,7 @@ end`,
 			input: `entity user -> name text end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{name: "name", dt: dataText},
 				},
 			},
@@ -248,7 +248,7 @@ end`,
 end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{name: "name", dt: dataText},
 					{name: "age", dt: dataInt},
 				},
@@ -261,7 +261,7 @@ end`,
 end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name:  "gender",
 						dt:    dataText,
@@ -319,7 +319,7 @@ func TestParseEntityConstraints(t *testing.T) {
 		end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "id",
 						dt:   dataInt,
@@ -338,7 +338,7 @@ func TestParseEntityConstraints(t *testing.T) {
 		end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "id",
 						dt:   dataInt,
@@ -357,7 +357,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "id",
 						dt:   dataInt,
@@ -375,7 +375,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "id",
 						dt:   dataInt,
@@ -407,7 +407,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "post",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "user_id",
 						dt:   dataInt,
@@ -467,7 +467,7 @@ func TestParseEntityConstraints(t *testing.T) {
 		end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "active",
 						dt:   dataInt,
@@ -488,7 +488,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "status",
 						dt:   dataText,
@@ -509,7 +509,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "age",
 						dt:   dataInt,
@@ -531,7 +531,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name:  "role",
 						dt:    dataText,
@@ -561,7 +561,7 @@ func TestParseEntityConstraints(t *testing.T) {
 			end`,
 			expected: &entityNode{
 				name: "user",
-				fields: []field{
+				fields: []longField{
 					{
 						name: "balance",
 						dt:   dataReal,
