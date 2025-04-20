@@ -23,7 +23,7 @@ type entityObject struct {
 }
 
 type constraint struct {
-	kind  consType
+	cons  consType
 	value *string
 }
 
@@ -35,8 +35,9 @@ type shortField struct {
 type longField struct {
 	name        string
 	dt          dataType
-	constraints []constraint
+	constraints *constraint
 	enums       []any
+	fieldFlags  fieldFlag
 }
 
 func (e entityNode) NodeLiteral() string {
@@ -148,12 +149,12 @@ func (p *Parser) parseField() *longField {
 			}
 			f.enums = enums
 		case lexer.TokenConsOpen:
-			constraints := p.parseConstraints(fieldDataType)
-			if constraints == nil {
+			cons := p.parseConstraints(fieldDataType)
+			if cons == nil {
 				// returning nil because the user specified a constraint and didn't finish
 				return nil
 			}
-			f.constraints = constraints
+			f.constraints = cons
 		case lexer.TokenListOpen:
 			if p.nextToken.Type != lexer.TokenListClose {
 				p.pushError(fmt.Sprintf("%s:%d; expected ], got %s",
@@ -169,6 +170,15 @@ func (p *Parser) parseField() *longField {
 			return f
 		}
 	}
+
+	// assign the payload friendly flag to the field based on the following
+	// rule; it's payload friendly (see list/map) and doesn't have any offending
+	// constraints such as increment
+	// if _, ok := payloadFriendly[f.dt]; ok {
+	// 	// if !slices.Contains(f.constraints, consIncrement) {
+	// 	// 	f.fieldFlags |= flagPayload
+	// 	// }
+	// }
 
 	return f
 }
@@ -235,8 +245,12 @@ func (p *Parser) parseEnums(fdt lexer.TokenType) []any {
 	return enums
 }
 
-func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
-	var constraints []constraint
+func (p *Parser) parseConstraints(fdt lexer.TokenType) *constraint {
+	result := &constraint{
+		cons:  consNone,
+		value: nil,
+	}
+	// var constraints []constraint
 
 	// Make sure the field's data type can be constrained
 	if _, ok := constrainableTypes[fdt]; !ok {
@@ -265,13 +279,19 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 		}
 		p.advanceToken() // consume constraint token
 
-		cons := constraint{
-			kind: c,
+		// we found a duplicate constraint; fail fast
+		if result.cons&c == 1 {
+			p.pushError(fmt.Sprintf("%s:%d; duplicate constraint %s",
+				p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
+			return nil
 		}
 
-		// Check if constraint requires a value (e.g., default value)
+		// assign the valid constype to the result if not a duplicate
+		result.cons |= c
+
+		// check if constraint requires a value (e.g., default value)
 		if p.curToken.Type == lexer.TokenColon {
-			if _, ok := consWithValues[cons.kind]; !ok {
+			if _, ok := consWithValues[c]; !ok {
 				p.pushError(fmt.Sprintf("%s:%d; constraint %q doesn't support values",
 					p.curToken.FileName, p.curToken.LineNum, p.curToken.Literal))
 				return nil
@@ -284,20 +304,17 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 				return nil
 			}
 
-			// Verify that the value matches the field's data type
+			// verify that the value matches the field's data type
 			if !verifyConstraintValue(fdt, p.curToken.Literal) {
 				p.pushError(fmt.Sprintf("%s:%d; data type for constraint value doesn't match %q",
 					p.curToken.FileName, p.curToken.LineNum, fdt.String()))
 				return nil
 			}
 
-			// Set the value for the constraint
-			cons.value = &p.curToken.Literal
+			// set the value for the constraint
+			result.value = &p.curToken.Literal
 			p.advanceToken() // consume value token
 		}
-
-		// Append the parsed constraint
-		constraints = append(constraints, cons)
 	}
 
 	// Consume the closing brace
@@ -305,7 +322,7 @@ func (p *Parser) parseConstraints(fdt lexer.TokenType) []constraint {
 		p.advanceToken() // consume '}'
 	}
 
-	return constraints
+	return result
 }
 
 func verifyConstraintValue(fdt lexer.TokenType, v string) bool {
@@ -339,10 +356,6 @@ func (e *entityNode) cleanupEntity() []error {
 			validFields[fieldName] = struct{}{}
 		}
 
-		if len(f.constraints) > 0 {
-			errs = append(errs, verifyConstraints(f.constraints)...)
-		}
-
 		if len(f.enums) > 0 {
 			errs = append(errs, verifyEnums(f.enums)...)
 		}
@@ -353,21 +366,6 @@ func (e *entityNode) cleanupEntity() []error {
 	}
 
 	return nil
-}
-
-func verifyConstraints(cons []constraint) []error {
-	errs := make([]error, 0)
-	seenConstraints := make(map[consType]struct{}, 0)
-
-	for _, c := range cons {
-		if _, ok := seenConstraints[c.kind]; ok {
-			errs = append(errs, fmt.Errorf("duplicate constraint %q", c.kind.String()))
-			continue
-		}
-		seenConstraints[c.kind] = struct{}{}
-	}
-
-	return errs
 }
 
 func verifyEnums(enums []any) []error {
@@ -390,9 +388,9 @@ func (e *entityNode) makePayload() {
 	var fields []shortField
 
 	for _, f := range e.fields {
-		if !includeField(f) {
-			continue
-		}
+		// if !includeField(f) {
+		// 	continue
+		// }
 		sf := shortField{
 			name: &f.name,
 			dt:   &f.dt,
@@ -414,17 +412,17 @@ func (e *entityNode) makePayload() {
 //		constraints []constraint
 //		enums       []any
 //	}
-func includeField(field longField) bool {
-	// data types like timestamps are autogenerated
-	// no need to enforce
-	if _, ok := payloadFriendly[field.dt]; !ok {
-		return false
-	}
-	for _, c := range field.constraints {
-		if c.kind == consIncrement {
-			return false
-		}
-	}
-
-	return true
-}
+// func includeField(field longField) bool {
+// 	// data types like timestamps are autogenerated
+// 	// no need to enforce
+// 	if _, ok := payloadFriendly[field.dt]; !ok {
+// 		return false
+// 	}
+// 	for _, c := range field.constraints {
+// 		if c.kind == consIncrement {
+// 			return false
+// 		}
+// 	}
+//
+// 	return true
+// }
