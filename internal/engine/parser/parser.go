@@ -45,13 +45,16 @@ func (p *Parser) ParseTokens() {
 			// NOTES;
 			// * remember to check that the entity has fields
 			entity := p.parseEntity()
+			// this logic might not be needed considering we have to
+			// parse everything and then print all the errors
 			if entity != nil {
 				p.nodes = append(p.nodes, entity)
 			}
 
-		// case lexer.TokenAlter:
-		// 	// Handle alter statements
-		// 	p.parseAlter()
+		case lexer.TokenAlter:
+			// Handle alter statements
+			p.parseAlter()
+
 		// case lexer.TokenRoutes:
 		// 	// Handle routes statements
 		// 	p.parseRoutes()

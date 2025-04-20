@@ -17,7 +17,7 @@ MIME is a declarative DSL-driven system that enables defining entities, routes, 
 ### 2. Execution Layer
 - **Validation System**
   - Ensure payloads match expected types.
-  - Enforce constraints (e.g., `number {increment}`, `text <> ["male", "female"]`).
+  - Enforce constraints (e.g., `number {increment}`, `text ["male", "female"]`).
   - Support custom validation rules.
 
 - **Routing & Execution**

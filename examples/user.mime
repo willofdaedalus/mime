@@ -1,9 +1,15 @@
+entity model ->
+	id uuid { increment primary }
+	created_at timestamp
+	deleted_at timestamp
+	updated_at timestamp
+end
+
 entity student ->
-	id number { increment required }
+	base ref model
 	dob text
 	age number { default:"18" }
 	category text ( "minor" "adult" )
-	created_at timestamp
 	gender text ( "male" "female" )
 end
 

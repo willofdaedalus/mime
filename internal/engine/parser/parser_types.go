@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"willofdaedalus/mime/internal/engine/lexer"
 )
@@ -18,15 +19,6 @@ const (
 	flagNullable           = 1 << 2
 )
 
-const (
-	dataText dataType = iota + 1
-	dataInt
-	dataBool
-	dataReal
-	dataUUID
-	dataTimestamp
-)
-
 const consNone consType = 0
 const (
 	consUnique consType = 1 << iota
@@ -36,6 +28,15 @@ const (
 	consDefault
 	consFK
 	// consEnsure
+)
+
+const (
+	dataText dataType = iota + 1
+	dataInt
+	dataBool
+	dataReal
+	dataUUID
+	dataTimestamp
 )
 
 var payloadFriendly = map[dataType]struct{}{
@@ -113,19 +114,27 @@ func (d dataType) String() string {
 }
 
 func (c consType) String() string {
-	switch c {
-	case consUnique:
-		return "unique"
-	case consIncrement:
-		return "increment"
-	case consPrimary:
-		return "primary"
-	case consRequired:
-		return "required"
-	case consFK:
-		return "fk"
-	case consDefault:
-		return "default"
+	var parts []string
+	if c&consUnique != 0 {
+		parts = append(parts, "Unique")
 	}
-	return fmt.Sprintf("%d", c)
+	if c&consIncrement != 0 {
+		parts = append(parts, "Increment")
+	}
+	if c&consPrimary != 0 {
+		parts = append(parts, "Primary")
+	}
+	if c&consRequired != 0 {
+		parts = append(parts, "Required")
+	}
+	if c&consDefault != 0 {
+		parts = append(parts, "Default")
+	}
+	if c&consFK != 0 {
+		parts = append(parts, "FK")
+	}
+	if len(parts) == 0 {
+		return "None"
+	}
+	return strings.Join(parts, "|")
 }
