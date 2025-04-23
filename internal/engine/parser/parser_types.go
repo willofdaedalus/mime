@@ -7,6 +7,20 @@ import (
 	"willofdaedalus/mime/internal/engine/lexer"
 )
 
+type shortField struct {
+	name *string
+	dt   *dataType
+}
+
+// entityObject resolves the issue of payloads and responses
+// by default it contains pointers to each field in the parent
+// entity which the user can then override with their own
+// default so long as the fields match those in the entity
+type entityObject struct {
+	isResponse bool
+	fields     []shortField
+}
+
 type (
 	dataType  int
 	consType  uint8

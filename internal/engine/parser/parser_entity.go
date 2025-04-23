@@ -14,19 +14,6 @@ type entityNode struct {
 	response entityObject
 }
 
-// entityObject resolves the issue of payloads and responses
-// by default it contains pointers to each field in the parent
-// entity which the user can then override with their own
-// default so long as the fields match those in the entity
-type entityObject struct {
-	fields []shortField
-}
-
-type shortField struct {
-	name *string
-	dt   *dataType
-}
-
 type constraintInfo struct {
 	kind  consType // bitfield
 	value *string  // only for default/other values
@@ -390,6 +377,7 @@ func verifyEnums(enums []any) []error {
 }
 
 // helper for both payload & response
+// checks flag against the type to return (payload, response)
 func (e *entityNode) buildObject(flag fieldFlag) entityObject {
 	var obj entityObject
 	for _, f := range e.fields {
