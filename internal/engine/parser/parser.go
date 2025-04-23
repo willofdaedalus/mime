@@ -17,7 +17,7 @@ type Parser struct {
 	curToken  lexer.Token
 	nextToken lexer.Token
 	errors    []error
-	nodes     []node
+	nodes     map[string]node
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
@@ -48,7 +48,7 @@ func (p *Parser) ParseTokens() {
 			// this logic might not be needed considering we have to
 			// parse everything and then print all the errors
 			if entity != nil {
-				p.nodes = append(p.nodes, entity)
+				p.nodes[entity.name] = entity
 			}
 
 		case lexer.TokenAlter:
@@ -66,6 +66,14 @@ func (p *Parser) ParseTokens() {
 			p.advanceToken()
 		}
 	}
+}
+
+func (p *Parser) findEntityNode(name string) (*entityNode, error) {
+	if e, ok := p.nodes[name]; ok {
+		return e.(*entityNode), nil
+	}
+
+	return nil, fmt.Errorf("entity of name %s doesn't exist in this context", name)
 }
 
 func (p *Parser) pushError(msg string) {
