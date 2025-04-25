@@ -1,0 +1,12 @@
+entity user ->
+    id uuid { increment primary }
+    email text { unique required }
+    password text { required }
+    created_at timestamp
+end
+
+routes ->
+    POST /user/signup <- payload
+    POST /user/login <- payload
+    POST /user/logout
+end
