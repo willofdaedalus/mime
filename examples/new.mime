@@ -1,0 +1,29 @@
+entity user has
+	id of uuid
+	name of text
+	password of text
+	age of number
+	school of text
+end
+
+alter payload for entity user to
+	self without
+	hj
+end
+
+alter response for entity user to
+	id of uuid
+	name of text
+	age of number
+	school of text
+end
+
+# can use self below because "entity user" is
+# automatically inferred. can also use entity
+# user.id or something; choice is down to the
+# user and programmer
+routes for entity user has
+	GET /users/:id returns self.id
+	POST /users returns self.payload
+	POST /employees returns self
+end

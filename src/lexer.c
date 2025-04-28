@@ -162,7 +162,28 @@ token_t *nextToken(lexer_t *lexer) {
 }
 
 char *readString(lexer_t *lexer) {
+	int start = lexer->position + 1;  /* skip initial quote */
+	readChar(lexer);  /* consume opening quote */
 
+	while (lexer->ch != '"' && lexer->ch != '\n' && lexer->ch != LEXEOF) {
+		if (lexer->ch == '\\') {
+			readChar(lexer);
+		}
+		readChar(lexer);
+	}
+
+	if (lexer->ch != '"') {
+		return strdup("UNKNOWN");  // Make sure to allocate
+	}
+
+	int length = lexer->position - start;
+	char *str = malloc(sizeof(char) * (length + 1));
+	if (str == NULL) return NULL;
+
+	strncpy(str, lexer->input + start, length);
+	str[length] = '\0';
+
+	return str;
 }
 
 /* collectEndpointVal basically reads through the input until the scanner
