@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"willofdaedalus/mime/internal/engine/lexer"
+	"willofdaedalus/mime/internal/engine/types"
 )
 
 type entityNode struct {
@@ -29,6 +30,10 @@ type longField struct {
 
 func (e entityNode) NodeLiteral() string {
 	return "entity"
+}
+
+func handleEntity(parser *Parser) node {
+	return &types.EntityNode{}
 }
 
 func (p *Parser) parseEntity() *entityNode {
