@@ -89,13 +89,15 @@ entity note ->
 	owner uuid @user.id
 end
 
-POST /signup -> create @user || respond 400 "signup failed"
-POST /signin -> find @user == params || respond 401 "invalid credentials"
-GET /notes/:id -> @note.id == :id || respond 404 "note not found"
-GET /notes -> @note == params || respond 404 "no notes found"
-POST /notes -> create @note || respond 400 "note creation failed"
-PATCH /notes/:id -> update @note.id == :id || respond 400 "update failed"
-DELETE /notes/:id -> delete @note.id == :id || respond 400 "delete failed"
+routes @user ->
+    POST /signup -> create self || respond 400 "signup failed"
+    POST /signin -> find self == params || respond 401 "invalid credentials"
+    GET /notes/:id -> @note.id == :id || respond 404 "note not found"
+    GET /notes -> @note == params || respond 404 "no notes found"
+    POST /notes -> create @note || respond 400 "note creation failed"
+    PATCH /notes/:id -> update @note.id == :id || respond 400 "update failed"
+    DELETE /notes/:id -> delete @note.id == :id || respond 400 "delete failed"
+end
 ```
 
 ## Example (LMS)
@@ -118,8 +120,10 @@ entity enrollment ->
 	course_id uuid @course.id
 end
 
-POST /students -> create @student || respond 400 "create failed"
-POST /courses -> create @course || respond 400 "create failed"
-POST /enrollments -> create @enrollment || respond 400 "create failed"
-GET /students/:id -> @student.id == :id || respond 404 "student not found"
+routes @student ->
+    POST /students -> create @student || respond 400 "create failed"
+    POST /courses -> create @course || respond 400 "create failed"
+    POST /enrollments -> create @enrollment || respond 400 "create failed"
+    GET /students/:id -> @student.id == :id || respond 404 "student not found"
+end
 ```

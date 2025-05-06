@@ -27,6 +27,7 @@ const (
 	TokenConsOpen  // {
 	TokenConsClose // }
 	TokenComment   // #
+	TokenAmpersand // @
 	TokenNewline   // \n
 	TokenDot       // .
 	TokenColon     // :
