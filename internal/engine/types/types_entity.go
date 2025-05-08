@@ -7,6 +7,16 @@ type EntityNode struct {
 	response entityObject
 }
 
+type entityField struct {
+	name string
+	dt   dataType
+}
+
+type EnumNode struct {
+	name    string
+	Members []string
+}
+
 type constraintInfo struct {
 	kind  consType // bitfield
 	value *string  // only for default/other values
@@ -15,7 +25,6 @@ type constraintInfo struct {
 type longField struct {
 	name       string
 	dt         dataType
-	enums      []any
 	consInfo   *constraintInfo
 	fieldFlags fieldFlag
 }
@@ -67,5 +76,9 @@ const (
 )
 
 func (e EntityNode) NodeLiteral() string {
+	return "entity"
+}
+
+func (e EnumNode) NodeLiteral() string {
 	return "entity"
 }

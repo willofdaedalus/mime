@@ -23,7 +23,7 @@
 * Enums are referenced using `&enum_name` syntax in field definitions.
 
 ```mime
-enum role ->
+enum user_role ->
 	admin
 	user
 	guest
@@ -32,7 +32,7 @@ end
 entity user ->
 	id uuid
 	name text
-	role text enum &role
+	role &user_role
 end
 ```
 
@@ -70,7 +70,7 @@ end
 ## Example (Notes App)
 
 ```mime
-enum role ->
+enum user_role ->
 	admin
 	user
 end
@@ -79,7 +79,7 @@ entity user ->
 	id uuid
 	name text
 	password text
-	role text &role
+	role &user_role
 end
 
 entity note ->

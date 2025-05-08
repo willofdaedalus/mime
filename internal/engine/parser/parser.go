@@ -9,8 +9,9 @@ import (
 
 type keywordHandler func(parser *Parser) node
 
-var handlers = map[string]keywordHandler{
-	"entity": handleEntity,
+var handlers = map[lexer.TokenType]keywordHandler{
+	lexer.TokenEntity: handleEntity,
+	lexer.TokenEnum:   handleEnum,
 }
 
 type node interface {
@@ -48,31 +49,12 @@ func (p *Parser) advanceToken() {
 // { "entity", entityHandler() }
 func (p *Parser) ParseTokens() {
 	for p.curToken.Type != lexer.TokenEOF {
-		switch p.curToken.Type {
-		case lexer.TokenEntity:
+		if handler, ok := handlers[p.curToken.Type]; ok {
 			p.advanceToken()
-			// NOTES;
-			// * remember to check that the entity has fields
-			entity := p.parseEntity()
-			// this logic might not be needed considering we have to
-			// parse everything and then print all the errors
-			if entity != nil {
-				p.nodes[entity.name] = entity
+			v := handler(p)
+			if v != nil {
+				p.nodes[p.curToken.Literal] = v
 			}
-
-		case lexer.TokenAlter:
-			// Handle alter statements
-			p.parseAlter()
-
-		// case lexer.TokenRoutes:
-		// 	// Handle routes statements
-		// 	p.parseRoutes()
-		// case lexer.TokenNewline, lexer.TokenComment:
-		// 	// Skip newlines and comments
-		// 	p.advanceToken()
-		default:
-			p.pushError(fmt.Sprintf("unexpected token: %s", p.curToken.Type))
-			p.advanceToken()
 		}
 	}
 }

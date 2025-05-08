@@ -28,6 +28,7 @@ const (
 	TokenConsClose // }
 	TokenComment   // #
 	TokenAmpersand // @
+	TokenStar      // * for using a keyword as a field or enum member name
 	TokenNewline   // \n
 	TokenDot       // .
 	TokenColon     // :
