@@ -13,7 +13,7 @@ type entityField struct {
 }
 
 type EnumNode struct {
-	name    string
+	Name    string
 	Members []string
 }
 

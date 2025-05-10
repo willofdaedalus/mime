@@ -7,6 +7,18 @@ import (
 	"willofdaedalus/mime/internal/engine/lexer"
 )
 
+type parserErrorLevel int
+
+const (
+	ParserLogError parserErrorLevel = iota
+	ParserLogWarning
+)
+
+type parserError struct {
+	errorLevel parserErrorLevel
+	msg        string
+}
+
 type shortField struct {
 	name *string
 	dt   *dataType

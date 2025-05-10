@@ -14,6 +14,7 @@ const (
 	TokenTypeRoutes    // routes
 	// keywords
 	TokenAlter    // alter
+	TokenEnum     // enum
 	TokenRef      // ref
 	TokenSelf     // self
 	TokenEnd      // end
@@ -56,6 +57,7 @@ const (
 var Keywords = map[string]TokenType{
 	// normal keywords
 	"entity":    TokenEntity,
+	"enum":      TokenEnum,
 	"float":     TokenTypeFloat,
 	"int":       TokenTypeInt,
 	"text":      TokenTypeText,

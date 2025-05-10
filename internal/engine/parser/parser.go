@@ -20,11 +20,12 @@ type node interface {
 }
 
 type Parser struct {
-	lex       *lexer.Lexer
-	curToken  lexer.Token
-	nextToken lexer.Token
-	errors    []error
-	nodes     map[string]node
+	lex          *lexer.Lexer
+	curToken     lexer.Token
+	nextToken    lexer.Token
+	parserErrors []parserError
+	errors       []error
+	nodes        map[string]node
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
@@ -65,6 +66,15 @@ func (p *Parser) findEntityNode(name string) (*entityNode, error) {
 	}
 
 	return nil, fmt.Errorf("entity of name %s doesn't exist in this context", name)
+}
+
+func (p *Parser) addError(logLevel parserErrorLevel, msg string) {
+	err := parserError{
+		errorLevel: logLevel,
+		msg:        msg,
+	}
+
+	p.parserErrors = append(p.parserErrors, err)
 }
 
 func (p *Parser) pushError(msg string) {
