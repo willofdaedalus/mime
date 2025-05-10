@@ -20,12 +20,13 @@ type node interface {
 }
 
 type Parser struct {
-	lex          *lexer.Lexer
-	curToken     lexer.Token
-	nextToken    lexer.Token
-	parserErrors []parserError
-	errors       []error
-	nodes        map[string]node
+	lex            *lexer.Lexer
+	curToken       lexer.Token
+	nextToken      lexer.Token
+	parserErrors   []parserError
+	errors         []error
+	nodes          map[string]node
+	invalidParsing bool
 }
 
 func NewParser(l *lexer.Lexer) *Parser {
@@ -69,6 +70,7 @@ func (p *Parser) findEntityNode(name string) (*entityNode, error) {
 }
 
 func (p *Parser) addError(logLevel parserErrorLevel, msg string) {
+	p.invalidParsing = true
 	err := parserError{
 		errorLevel: logLevel,
 		msg:        msg,
@@ -80,4 +82,8 @@ func (p *Parser) addError(logLevel parserErrorLevel, msg string) {
 func (p *Parser) pushError(msg string) {
 	// fmt.Println(msg)
 	p.errors = append(p.errors, errors.New(msg))
+}
+
+func (p *Parser) resetContext() {
+	p.invalidParsing = false
 }

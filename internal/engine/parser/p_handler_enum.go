@@ -10,7 +10,8 @@ import (
 )
 
 func handleEnum(p *Parser) node {
-	invalidSyntax := false
+	defer p.resetContext()
+
 	if !expectTokOf(p.curToken, lexer.TokenEnum) {
 		p.addError(ParserLogError,
 			fmt.Sprintf("expected enum, got %s", p.curToken.Type))
@@ -49,6 +50,7 @@ func handleEnum(p *Parser) node {
 		if p.curToken.Type != lexer.TokenIdent {
 			p.addError(ParserLogError,
 				fmt.Sprintf("expected enum member got %s", p.curToken.Type))
+			p.advanceToken()
 			continue
 		}
 
@@ -56,13 +58,11 @@ func handleEnum(p *Parser) node {
 		// validate and make sure there are no duplicates
 		err := validateEnumValue(v)
 		if err != nil {
-			invalidSyntax = true
 			p.addError(ParserLogError, err.Error())
 			p.advanceToken()
 			continue
 		}
 		if slices.Contains(enumNode.Members, v) {
-			invalidSyntax = true
 			p.addError(ParserLogError, fmt.Sprintf("duplicate enum member %s", v))
 			p.advanceToken()
 			continue
@@ -72,7 +72,7 @@ func handleEnum(p *Parser) node {
 		p.advanceToken()
 	}
 
-	if invalidSyntax || len(enumNode.Members) == 0 {
+	if p.invalidParsing || len(enumNode.Members) == 0 {
 		// this passes the test instead of the usual nil
 		return (*types.EnumNode)(nil)
 	}
