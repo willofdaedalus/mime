@@ -77,6 +77,8 @@ func (l *Lexer) NextToken() Token {
 	case ':':
 		tok = newToken(TokenColon, l.ch)
 	case '@':
+		tok = newToken(TokenAtSymbol, l.ch)
+	case '&':
 		tok = newToken(TokenAmpersand, l.ch)
 	case '*':
 		tok = newToken(TokenStar, l.ch)
