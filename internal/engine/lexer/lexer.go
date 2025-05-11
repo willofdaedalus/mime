@@ -89,8 +89,6 @@ func (l *Lexer) NextToken() Token {
 			return tok
 		}
 		tok = newToken(TokenUnknown, l.ch)
-	case '\n':
-		tok = newToken(TokenNewline, l.ch)
 	case '"':
 		tok.Type = TokenString
 		tok.Literal = l.readString()
@@ -124,13 +122,13 @@ func (l *Lexer) NextToken() Token {
 }
 
 func (l *Lexer) skipComment() {
-	for l.ch != '\n' {
+	for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 }
 
 func (l *Lexer) skipWhitespace() {
-	for unicode.IsSpace(rune(l.ch)) {
+	for l.ch != 0 && unicode.IsSpace(rune(l.ch)) {
 		l.readChar()
 	}
 }
@@ -175,7 +173,7 @@ func (l *Lexer) collectEndpointStr() string {
 	start := l.position
 	l.readChar()
 
-	for l.ch != ' ' && l.ch != '\n' {
+	for l.ch != ' ' && l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 	return l.input[start:l.position]
@@ -204,9 +202,18 @@ func (l *Lexer) readString() string {
 
 func (l *Lexer) readIdentifier() string {
 	start := l.position
-	for isLetter(l.ch) {
+
+	// first character must be a letter or underscore
+	if !unicode.IsLetter(rune(l.ch)) && l.ch != '_' {
+		return ""
+	}
+	l.readChar()
+
+	// subsequent characters can be letter, digit, or underscore
+	for unicode.IsLetter(rune(l.ch)) || unicode.IsDigit(rune(l.ch)) || l.ch == '_' {
 		l.readChar()
 	}
+
 	return l.input[start:l.position]
 }
 

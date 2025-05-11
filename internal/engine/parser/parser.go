@@ -46,13 +46,10 @@ func (p *Parser) advanceToken() {
 	p.nextToken = p.lex.NextToken()
 }
 
-// TODO!
-// name handler
 // { "entity", entityHandler() }
 func (p *Parser) ParseTokens() {
 	for p.curToken.Type != lexer.TokenEOF {
 		if handler, ok := handlers[p.curToken.Type]; ok {
-			p.advanceToken()
 			v := handler(p)
 			if v != nil {
 				p.nodes[p.curToken.Literal] = v
@@ -70,7 +67,9 @@ func (p *Parser) findEntityNode(name string) (*entityNode, error) {
 }
 
 func (p *Parser) addError(logLevel parserErrorLevel, msg string) {
-	p.invalidParsing = true
+	if logLevel != ParserLogWarning {
+		p.invalidParsing = true
+	}
 	err := parserError{
 		errorLevel: logLevel,
 		msg:        msg,
