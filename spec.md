@@ -6,15 +6,27 @@
 * Each entity must have at least one field.
 * Fields follow the format: `<name> <type> [constraint]*`.
 * Entities are referenced using `@entity` syntax.
+* Types include: `uuid`, `float`, `int`, `text`, `bool`, `timestamp`
 
 ## Attributes (Fields)
+Attributes are additional rules applied to fields to elicit certain behaviour. 
+They are currently split in two; runtime and database constraints. List below
 
-* Types include: `uuid`, `int`, `text`, `bool`, `datetime`, etc.
-* Constraints:
-    * `required`: must be present.
-    * `unique`: must be unique across records.
-    * `default <value>`: default if none provided.
-    * `&<enum_name>`: value must match a defined enum.
+| Attribute         | Runtime Check?  | DB Constraint?  | Notes                                                                                                                    |
+|-------------------|-----------------|-----------------|--------------------------------------------------------------------------------------------------------------------------|
+| `check:<expr>`    | ❌ No           | ✅ Yes          | enforced by SQLite using `CHECK` constraints. Great for value bounds, logic rules, etc.                                  |
+| `default:<val>`   | ❌ No           | ✅ Yes          | let SQLite handle defaults. You *can* prefill at runtime if you want more control.                                       |
+| `foreign:<ref>`   | ❌ No           | ✅ Yes          | references another table and enforces referential integrity. You might validate foreign existence at runtime optionally. |
+| `hash`            | ✅ Yes          | ❌ No           | needs runtime hashing using bcrypt. Should only apply to string fields.                                                  |
+| `hidden`          | ✅ Yes          | ❌ No           | hides the field from output by default. Controlled by your runtime tooling.                                              |
+| `increment`       | ❌ No           | ✅ Yes          | applied as `AUTOINCREMENT` in SQLite. Should never be done in runtime.                                                   |
+| `length:min,max`  | ✅ Yes          | ❌ No           | useful for enforcing string length constraints. Could technically be duplicated in DB with `CHECK` if needed.            |
+| `override`        | ✅ Yes          | ❌ No           | used to explicitly expose fields marked as `hidden`. Has no DB meaning.                                                  |
+| `pattern:<regex>` | ✅ Yes          | ❌ No           | validates a value matches a regex. Only viable in runtime — SQLite regex is limited or requires extensions.              |
+| `primary`         | ❌ No           | ✅ Yes          | you can let SQLite enforce it. You’ll still want to ensure only one field is marked as primary at parse time.            |
+| `readonly`        | ✅ Yes          | ❌ No           | value is returned in queries but should be ignored in mutations. Logic-only attribute.                                   |
+| `required`        | ✅ Yes          | ✅ Yes          | enforced in both runtime (e.g. on insert) and in the DB via `NOT NULL`.                                                  |
+| `unique`          | ❌ No           | ✅ Yes          | should be left to SQLite. Runtime enforcement requires costly queries and is race-prone.                                 |
 
 ## Enums
 
