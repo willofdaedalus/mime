@@ -32,8 +32,32 @@ func (e entityNode) NodeLiteral() string {
 	return "entity"
 }
 
-func handleEntity(parser *Parser) node {
-	return &types.EntityNode{}
+func handleEntity(p *Parser) node {
+	if !expectTokOf(p.curToken, lexer.TokenEntity) {
+		p.pushError(fmt.Sprintf("expected entity token, got %s", p.curToken.Type))
+		return nil
+	}
+	p.advanceToken() // consume 'entity'
+
+	if !expectTokOf(p.curToken, lexer.TokenIdent) {
+		p.pushError(fmt.Sprintf("expected entity name, got %s", p.curToken.Type))
+		fmt.Println("expected entity name")
+		return nil
+	}
+
+	entity := types.EntityNode{
+		Name: p.curToken.Literal,
+	}
+	p.advanceToken() // consume entity name
+
+	// check for arrow token
+	if !expectTokOf(p.curToken, lexer.TokenArrow) {
+		p.pushError(fmt.Sprintf("expected -> after entity name, got %s", p.curToken.Type))
+		fmt.Println("expected -> after entity name")
+		return nil
+	}
+	p.advanceToken() // consume '->'
+	return entity
 }
 
 func (p *Parser) parseEntity() *entityNode {

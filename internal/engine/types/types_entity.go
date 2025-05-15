@@ -1,6 +1,8 @@
 package types
 
 type EntityNode struct {
+	Name     string
+	Fields   []longField
 	name     string
 	fields   []longField
 	payload  entityObject
