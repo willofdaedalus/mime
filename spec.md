@@ -98,7 +98,7 @@ entity note ->
 	id uuid
 	title text
 	content text
-	owner uuid @user.id
+	owner @user.id
 end
 
 routes @user ->

@@ -2,11 +2,21 @@ package types
 
 type EntityNode struct {
 	Name     string
-	Fields   []longField
+	Fields   []LongField
 	name     string
-	fields   []longField
+	fields   []LongField
 	payload  entityObject
 	response entityObject
+}
+
+type LongField struct {
+	Name       string
+	Dt         dataType
+	Attributes Attribute
+}
+
+type DataType struct {
+	basic dataType
 }
 
 type entityField struct {
@@ -22,13 +32,6 @@ type EnumNode struct {
 type constraintInfo struct {
 	kind  consType // bitfield
 	value *string  // only for default/other values
-}
-
-type longField struct {
-	name       string
-	dt         dataType
-	consInfo   *constraintInfo
-	fieldFlags fieldFlag
 }
 
 type shortField struct {
@@ -75,6 +78,7 @@ const (
 	dataReal
 	dataUUID
 	dataTimestamp
+	dataOther
 )
 
 func (e EntityNode) NodeLiteral() string {

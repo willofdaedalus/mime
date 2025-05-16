@@ -57,7 +57,20 @@ func handleEntity(p *Parser) node {
 		return nil
 	}
 	p.advanceToken() // consume '->'
+
+	for p.curToken.Type != lexer.TokenEnd {
+		if p.curToken.Type == lexer.TokenComment {
+			p.advanceToken()
+		}
+
+		parseField(p)
+	}
+
 	return entity
+}
+
+func parseField(p *Parser) *types.LongField {
+	return &types.LongField
 }
 
 func (p *Parser) parseEntity() *entityNode {
