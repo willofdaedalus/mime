@@ -78,6 +78,8 @@ func (l *Lexer) NextToken() Token {
 		tok = newToken(TokenColon, l.ch)
 	case '@':
 		tok = newToken(TokenAtSymbol, l.ch)
+	case '\n':
+		tok = newToken(TokenNewline, l.ch)
 	case '&':
 		tok = newToken(TokenAmpersand, l.ch)
 	case '*':
@@ -130,8 +132,10 @@ func (l *Lexer) skipComment() {
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.ch != 0 && unicode.IsSpace(rune(l.ch)) {
-		l.readChar()
+	if l.ch != '\n' {
+		for l.ch != 0 && unicode.IsSpace(rune(l.ch)) {
+			l.readChar()
+		}
 	}
 }
 
