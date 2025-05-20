@@ -1,14 +1,7 @@
 package main
 
-import (
-	"willofdaedalus/mime/internal/engine/lexer"
-)
+import "fmt"
 
 func main() {
-	input := `entity user ->
-	active int {default:"1"}
-end`
-
-	l := lexer.New(input)
-	l.RenderTokens()
+	fmt.Println("hello mime")
 }

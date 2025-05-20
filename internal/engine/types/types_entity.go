@@ -1,27 +1,30 @@
 package types
 
+type FieldKind int
+
+const (
+	FieldPrimitive FieldKind = iota // `name text`
+	FieldReference                  // `owner @user.id`
+	FieldEmbedded                   // `@person`
+)
+
 type EntityNode struct {
-	Name     string
-	Fields   []LongField
-	name     string
-	fields   []LongField
-	payload  entityObject
-	response entityObject
+	Name   string
+	Fields []*Field
 }
 
-type LongField struct {
+type ReferenceTarget struct {
+	Entity string
+	Field  string
+}
+
+type Field struct {
 	Name       string
-	Dt         dataType
-	Attributes Attribute
-}
-
-type DataType struct {
-	basic dataType
-}
-
-type entityField struct {
-	name string
-	dt   dataType
+	Kind       FieldKind
+	DataType   DataType
+	Target     *ReferenceTarget
+	Embedded   []*Field
+	Attributes []Attribute
 }
 
 type EnumNode struct {
@@ -29,27 +32,8 @@ type EnumNode struct {
 	Members []string
 }
 
-type constraintInfo struct {
-	kind  consType // bitfield
-	value *string  // only for default/other values
-}
-
-type shortField struct {
-	name *string
-	dt   *dataType
-}
-
-// entityObject resolves the issue of payloads and responses
-// by default it contains pointers to each field in the parent
-// entity which the user can then override with their own
-// default so long as the fields match those in the entity
-type entityObject struct {
-	isResponse bool
-	fields     []shortField
-}
-
 type (
-	dataType  int
+	DataType  int
 	consType  uint8
 	fieldFlag uint8
 )
@@ -72,7 +56,7 @@ const (
 )
 
 const (
-	dataText dataType = iota + 1
+	dataText DataType = iota + 1
 	dataInt
 	dataBool
 	dataReal

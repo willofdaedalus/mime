@@ -63,14 +63,18 @@ func handleEntity(p *Parser) node {
 			p.advanceToken()
 		}
 
-		parseField(p)
+		f, err := parseField(p)
+		if err != nil {
+			p.addError(ParserLogError, err.Error())
+			// probably not needed considering we'll discard
+			// everything once the parser has an error
+			continue
+		}
+
+		entity.Fields = append(entity.Fields, f)
 	}
 
 	return entity
-}
-
-func parseField(p *Parser) *types.LongField {
-	return &types.LongField
 }
 
 func (p *Parser) parseEntity() *entityNode {
