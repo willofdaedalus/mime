@@ -47,25 +47,31 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 	field.Name = p.curToken.Literal
 	p.advanceToken()
 
-	switch p.curToken.Type {
-	case l.TokenAtSymbol:
+	if p.curToken.Type == l.TokenAtSymbol {
 		p.advanceToken() // skip the @ symbol
 		refs, err := parseReferenceTarget(p)
 		if err != nil {
 			p.addError(ParserLogError, err.Error())
-			break
+		} else {
+			field.Target = refs
 		}
-		field.Target = refs
-
-	case l.TokenIdent:
+	} else {
+		dt, ok := types.TokenToDataType[p.curToken.Type]
+		if !ok {
+			p.addError(ParserLogError, fmt.Sprintf("unknown data type %s", p.curToken.Literal))
+		} else {
+			field.DataType = dt
+		}
 	}
+
 	// attributes?
 	if p.curToken.Type == l.TokenEnumOpen {
 		attrs, err := parseAttributes(p)
 		if err != nil {
-			return nil, err
+			p.addError(ParserLogError, err.Error())
+		} else {
+			field.Attributes = attrs
 		}
-		field.Attributes = attrs
 	}
 
 	// make sure line ends correctly

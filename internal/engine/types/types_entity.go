@@ -1,5 +1,7 @@
 package types
 
+import "willofdaedalus/mime/internal/engine/lexer"
+
 type FieldKind int
 
 const (
@@ -64,6 +66,15 @@ const (
 	dataTimestamp
 	dataOther
 )
+
+var TokenToDataType = map[lexer.TokenType]DataType{
+	lexer.TokenTypeText:      dataText,
+	lexer.TokenTypeInt:       dataInt,
+	lexer.TokenTypeFloat:     dataReal,
+	lexer.TokenTypeTimestamp: dataTimestamp,
+	lexer.TokenTypeUuid:      dataUUID,
+	lexer.TokenTypeBool:      dataBool,
+}
 
 func (e EntityNode) NodeLiteral() string {
 	return "entity"
