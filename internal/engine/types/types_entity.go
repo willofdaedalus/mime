@@ -26,7 +26,7 @@ type Field struct {
 	DataType   DataType
 	Target     *ReferenceTarget
 	Embedded   []*Field
-	Attributes []Attribute
+	Attributes Attribute
 }
 
 type EnumNode struct {
@@ -58,22 +58,24 @@ const (
 )
 
 const (
-	dataText DataType = iota + 1
-	dataInt
-	dataBool
-	dataReal
-	dataUUID
-	dataTimestamp
-	dataOther
+	DataText DataType = iota + 1
+	DataInt
+	DataBool
+	DataReal
+	DataUUID
+	DataEnum
+	DataRef
+	DataTimestamp
+	DataOther
 )
 
 var TokenToDataType = map[lexer.TokenType]DataType{
-	lexer.TokenTypeText:      dataText,
-	lexer.TokenTypeInt:       dataInt,
-	lexer.TokenTypeFloat:     dataReal,
-	lexer.TokenTypeTimestamp: dataTimestamp,
-	lexer.TokenTypeUuid:      dataUUID,
-	lexer.TokenTypeBool:      dataBool,
+	lexer.TokenTypeText:      DataText,
+	lexer.TokenTypeInt:       DataInt,
+	lexer.TokenTypeFloat:     DataReal,
+	lexer.TokenTypeTimestamp: DataTimestamp,
+	lexer.TokenTypeUuid:      DataUUID,
+	lexer.TokenTypeBool:      DataBool,
 }
 
 func (e EntityNode) NodeLiteral() string {

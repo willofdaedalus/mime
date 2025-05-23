@@ -1,6 +1,9 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"willofdaedalus/mime/internal/engine/types"
+)
 
 // for each field in an entity, all attributes (usually after the data type)
 // are collected into a struct. this struct then performs checks on each of
@@ -8,10 +11,7 @@ import "fmt"
 // the rules of the data type i.e they're not compatitible with the data
 // the struct immediately refuses
 
-type (
-	AttributeSet  int
-	FieldDataType int
-)
+type AttributeSet int
 
 const (
 	AttrDefault AttributeSet = 1 << iota
@@ -25,33 +25,21 @@ const (
 	AttrReadonly
 )
 
-const (
-	TypeText FieldDataType = iota
-	TypeInt
-	TypeFloat
-	TypeUUID
-	TypeTimestamp
-	TypeBool
-	TypeEnum
-	TypeEntity // foreign key or nested
-	TypeArray  // array of anything
-)
-
-var allowedAttrsByType = map[FieldDataType]AttributeSet{
-	TypeText:      AttrDefault | AttrRequired | AttrUnique | AttrHash | AttrHidden | AttrReadonly,
-	TypeInt:       AttrDefault | AttrRequired | AttrUnique | AttrIncrement | AttrHidden | AttrReadonly,
-	TypeFloat:     AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly,
-	TypeUUID:      AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly,
-	TypeTimestamp: AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
-	TypeBool:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
-	TypeEnum:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
-	TypeEntity:    AttrDefault | AttrRequired | AttrOverride | AttrHidden | AttrReadonly,
-	TypeArray:     AttrDefault | AttrRequired | AttrOverride | AttrHidden | AttrReadonly,
+var allowedAttrsByType = map[types.DataType]AttributeSet{
+	types.DataText:      AttrDefault | AttrRequired | AttrUnique | AttrHash | AttrHidden | AttrReadonly,
+	types.DataInt:       AttrDefault | AttrRequired | AttrUnique | AttrIncrement | AttrHidden | AttrReadonly,
+	types.DataReal:      AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly,
+	types.DataUUID:      AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly,
+	types.DataTimestamp: AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
+	types.DataBool:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
+	types.DataEnum:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
+	// types.DataEntity:    AttrDefault | AttrRequired | AttrOverride | AttrHidden | AttrReadonly,
+	// types.DataArray:     AttrDefault | AttrRequired | AttrOverride | AttrHidden | AttrReadonly,
 }
 
 type FieldAttributes struct {
 	Name       string
-	DataType   FieldDataType
+	DataType   types.DataType
 	Attributes AttributeSet
 }
 
@@ -70,10 +58,10 @@ func (f FieldAttributes) validateAttributeConflicts() error {
 	attrs := f.Attributes
 	dt := f.DataType
 
-	if attrs&AttrIncrement != 0 && dt != TypeInt {
+	if attrs&AttrIncrement != 0 && dt != types.DataInt {
 		return fmt.Errorf("increment only valid for int type")
 	}
-	if attrs&AttrHash != 0 && dt != TypeText {
+	if attrs&AttrHash != 0 && dt != types.DataText {
 		return fmt.Errorf("hash only valid for text type")
 	}
 	if attrs&(AttrIncrement|AttrReadonly) == (AttrIncrement | AttrReadonly) {
@@ -83,7 +71,7 @@ func (f FieldAttributes) validateAttributeConflicts() error {
 		// optional warning — not fatal
 		fmt.Printf("warning: field %s has both primary and unique (redundant)\n", f.Name)
 	}
-	if attrs&AttrOverride != 0 && dt != TypeEntity && dt != TypeArray {
+	if attrs&AttrOverride != 0 && dt != types.DataEntity && dt != TypeArray {
 		fmt.Printf("warning: field %s uses override but isn't a nested/array field\n", f.Name)
 	}
 	return nil
