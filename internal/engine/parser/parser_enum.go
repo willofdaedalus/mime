@@ -2,25 +2,20 @@ package parser
 
 import (
 	"fmt"
-	"slices"
 
 	"willofdaedalus/mime/internal/engine/lexer"
 	"willofdaedalus/mime/internal/engine/types"
 )
 
-func handleEnum(p *Parser) node {
-	defer p.resetContext()
-
+func handleEnum(p *Parser) (node, error) {
 	if !expectTokOf(p.curToken, lexer.TokenEnum) {
-		p.addError(ParserLogError,
-			fmt.Sprintf("expected enum, got %s", p.curToken.Type))
+		return nil, fmt.Errorf("expected enum, got %s", p.curToken.Type)
 	}
 	p.advanceToken() // consume enum
 
+	// enum name
 	if !expectTokOf(p.curToken, lexer.TokenIdent) {
-		p.addError(ParserLogError,
-			fmt.Sprintf("expected enum name, got %s", p.curToken.Type))
-		fmt.Println("expected num name")
+		return (node)(nil), fmt.Errorf("expected enum name, got %s", p.curToken.Type)
 	}
 
 	enumNode := &types.EnumNode{
@@ -31,9 +26,7 @@ func handleEnum(p *Parser) node {
 
 	// check for arrow token
 	if !expectTokOf(p.curToken, lexer.TokenArrow) {
-		p.addError(ParserLogError,
-			fmt.Sprintf("expected -> after enum name, got %s", p.curToken.Type))
-		fmt.Println("expected -> after enum name")
+		return (node)(nil), fmt.Errorf("expected -> after enum name, got %s", p.curToken.Type)
 	}
 	p.advanceToken() // consume '->'
 
@@ -45,54 +38,35 @@ func handleEnum(p *Parser) node {
 
 		// unexpected end to file with no end keyword
 		if p.curToken.Type == lexer.TokenEOF {
-			return (*types.EnumNode)(nil)
+			return (node)(nil), fmt.Errorf("unexpected end to file")
 		}
 
 		if p.curToken.Type != lexer.TokenIdent {
-			p.addError(ParserLogError,
-				fmt.Sprintf("expected enum member got %s", p.curToken.Type))
-			skipToTok(p, lexer.TokenIdent)
-			// p.advanceToken()
-			continue
+			return (node)(nil), fmt.Errorf("expected enum member got %s", p.curToken.Type)
 		}
 
 		v := p.curToken.Literal
+		// THIS IS WORK FOR THE AST NOT THE PARSER
 		// validate and make sure there are no duplicates
-		err := validateEnumValue(v)
-		if err != nil {
-			p.addError(ParserLogError, err.Error())
-			p.advanceToken()
-			continue
-		}
-		if slices.Contains(enumNode.Members, v) {
-			p.addError(ParserLogError, fmt.Sprintf("duplicate enum member %s", v))
-			p.advanceToken()
-			continue
-		}
+		// err := validateEnumValue(v)
+		// if err != nil {
+		// 	p.addError(ParserLogError, err.Error())
+		// 	p.advanceToken()
+		// 	continue
+		// }
+		// if slices.Contains(enumNode.Members, v) {
+		// 	p.addError(ParserLogError, fmt.Sprintf("duplicate enum member %s", v))
+		// 	p.advanceToken()
+		// 	continue
+		// }
 
 		enumNode.Members = append(enumNode.Members, v)
 		p.advanceToken()
 	}
 
 	if len(enumNode.Members) == 0 {
-		// this won't trigger a p.invalidParsing but will generate a warning
-		p.addError(ParserLogWarning, fmt.Sprintf("enum %s is declared and might not works as expected",
-			enumNode.Name))
+		return (node)(nil), fmt.Errorf("empty enums are not allowed")
 	}
 
-	if p.invalidParsing {
-		// this passes the test instead of the usual nil
-		return (*types.EnumNode)(nil)
-	}
-
-	return enumNode
-}
-
-func validateEnumValue(s string) error {
-	// check that it doesn't conflict with any keywords
-	if _, ok := lexer.Keywords[s]; ok {
-		fmt.Println("starts with keyword")
-		return fmt.Errorf("%s is a reserved keyword", s)
-	}
-	return nil
+	return enumNode, nil
 }

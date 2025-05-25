@@ -8,7 +8,7 @@ import (
 )
 
 func parseField(p *Parser) (*types.Field, error) {
-	var field *types.Field
+	field := &types.Field{}
 
 	// check for embed (@entity)
 	if p.curToken.Type == l.TokenAtSymbol {
@@ -39,7 +39,7 @@ func parseField(p *Parser) (*types.Field, error) {
 }
 
 func parseFieldNormal(p *Parser) (*types.Field, error) {
-	var field *types.Field
+	field := &types.Field{}
 
 	// field name
 	if p.curToken.Type != l.TokenIdent {
@@ -55,8 +55,7 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 		p.advanceToken() // skip the @ symbol
 		refs, err := parseReferenceTarget(p)
 		if err != nil {
-			p.addError(ParserLogError, err.Error())
-			// return nil, err // Return error instead of just adding to log
+			return nil, err // return error instead of just adding to log
 		}
 
 		field.Target = refs
@@ -104,8 +103,8 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 
 	// make sure line ends correctly
 	if p.curToken.Type != l.TokenNewline && p.curToken.Type != l.TokenEOF && p.curToken.Type != l.TokenComment {
-		p.addError(ParserLogError, fmt.Sprintf("unexpected token at end of field: %s", p.curToken.Literal))
-		// return nil, fmt.Errorf("unexpected token at end of field: %s", p.curToken.Literal)
+		// p.addError(ParserLogError, fmt.Sprintf("unexpected token at end of field: %s", p.curToken.Literal))
+		return nil, fmt.Errorf("unexpected token at end of field: %s", p.curToken.Literal)
 	}
 
 	return field, nil
@@ -136,50 +135,10 @@ func parseAttributes(p *Parser) (types.Attribute, error) {
 		}
 	}
 
+	p.advanceToken() // consume the closing ']'
+
 	return attribute, nil
 }
-
-// func parseAttributes(p *Parser) ([]types.Attribute, error) {
-// 	var attributes []types.Attribute
-//
-// 	// consume opening bracket
-// 	if p.curToken.Type != l.TokenEnumOpen {
-// 		p.addError(ParserLogError, fmt.Sprintf("expected '[' to start attributes"))
-// 		// return nil, fmt.Errorf("expected '[' to start attributes")
-// 	}
-// 	p.advanceToken()
-//
-// 	for p.curToken.Type != l.TokenEnumClose {
-// 		if p.curToken.Type == l.TokenEOF {
-// 			p.addError(ParserLogError, fmt.Sprintf("unexpected EOF while parsing attributes"))
-// 			// return nil, fmt.Errorf("unexpected EOF while parsing attributes")
-// 		}
-//
-// 		if p.curToken.Type == l.TokenIdent {
-// 			attribute, err := types.StringToAttribute(p.curToken.Literal)
-// 			if err != nil {
-// 				return nil, fmt.Errorf("unknown attribute: %s", p.curToken.Literal)
-// 			}
-// 			attributes = append(attributes, attribute)
-// 			p.advanceToken()
-// 		}
-//
-// 		// // Handle comma separation or whitespace
-// 		// if p.curToken.Type == l.TokenComma {
-// 		// 	p.advanceToken()
-// 		// } else if p.curToken.Type != l.TokenEnumClose {
-// 		// 	// Skip whitespace or other separators if needed
-// 		// 	p.advanceToken()
-// 		// }
-// 	}
-//
-// 	// Consume closing bracket
-// 	if p.curToken.Type == l.TokenEnumClose {
-// 		p.advanceToken()
-// 	}
-//
-// 	return attributes, nil
-// }
 
 func parseReferenceTarget(p *Parser) (*types.ReferenceTarget, error) {
 	// example field that satisfies this
