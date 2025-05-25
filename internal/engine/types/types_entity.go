@@ -8,6 +8,7 @@ const (
 	FieldPrimitive FieldKind = iota // `name text`
 	FieldReference                  // `owner @user.id`
 	FieldEmbedded                   // `@person`
+	FieldEnum                       // &enum_name
 )
 
 type EntityNode struct {
@@ -25,7 +26,6 @@ type Field struct {
 	Kind       FieldKind
 	DataType   DataType
 	Target     *ReferenceTarget
-	Embedded   []*Field
 	Attributes Attribute
 }
 

@@ -35,6 +35,17 @@ var allowedAttrsByType = map[DataType]Attribute{
 	DataEnum:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
 }
 
+var LiteralToAttr = map[string]Attribute{
+	"hash":      AttrHash,
+	"increment": AttrIncrement,
+	"override":  AttrOverride,
+	"unique":    AttrUnique,
+	"primary":   AttrPrimary,
+	"readonly":  AttrReadonly,
+	"hidden":    AttrHidden,
+	"required":  AttrRequired,
+}
+
 // helper function to convert string to attribute
 func StringToAttribute(s string) (Attribute, error) {
 	switch strings.ToLower(s) {
