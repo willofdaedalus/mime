@@ -7,7 +7,7 @@ import (
 	"willofdaedalus/mime/internal/engine/lexer"
 )
 
-type keywordHandler func(parser *Parser) node
+type keywordHandler func(parser *Parser) (node, error)
 
 var handlers = map[lexer.TokenType]keywordHandler{
 	lexer.TokenEntity: handleEntity,
@@ -47,15 +47,19 @@ func (p *Parser) advanceToken() {
 }
 
 // { "entity", entityHandler() }
-func (p *Parser) ParseTokens() {
+func (p *Parser) ParseTokens() error {
 	for p.curToken.Type != lexer.TokenEOF {
 		if handler, ok := handlers[p.curToken.Type]; ok {
-			v := handler(p)
-			if v != nil {
-				p.nodes[p.curToken.Literal] = v
+			v, err := handler(p)
+			if err != nil {
+				return err
 			}
+
+			p.nodes[p.curToken.Literal] = v
 		}
 	}
+
+	return nil
 }
 
 func (p *Parser) findEntityNode(name string) (*entityNode, error) {
