@@ -24,11 +24,13 @@ func parseField(p *Parser) (*types.Field, error) {
 		p.advanceToken() // consume entity name
 
 		// after @entity, the next token must be newline or comment
-		if p.curToken.Type != l.TokenNewline && p.curToken.Type != l.TokenComment && p.curToken.Type != l.TokenEOF {
+		if p.curToken.Type != l.TokenComment && p.curToken.Type != l.TokenEOF {
 			// p.addError(ParserLogError,
 			// 	fmt.Sprintf("expected entity name after '@', got %s", p.curToken.Literal))
 			return nil, fmt.Errorf("unexpected token after embedded entity: %s", p.curToken.Literal)
 		}
+
+		p.advanceToken() // consume the last token
 
 		field.Kind = types.FieldEmbedded
 		return field, nil
@@ -45,7 +47,7 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 	if p.curToken.Type != l.TokenIdent {
 		// p.addError(ParserLogError,
 		// 	fmt.Sprintf("expected field name, got %s", p.curToken.Literal))
-		return nil, fmt.Errorf("expected field name, got %s", p.curToken.Literal)
+		return nil, fmt.Errorf("expected field name, got %q %q", p.curToken.Literal, p.curToken.Type)
 	}
 	field.Name = p.curToken.Literal
 	p.advanceToken()
@@ -65,8 +67,6 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 		// handle enum reference (&enum_name)
 		p.advanceToken() // consume &
 		if p.curToken.Type != l.TokenIdent {
-			// p.addError(ParserLogError,
-			// 	fmt.Sprintf("expected enum name after '&', got %s", p.curToken.Literal))
 			return nil, fmt.Errorf("expected enum name after '&', got %s", p.curToken.Literal)
 		}
 
@@ -82,8 +82,6 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 		// regular data type
 		dt, ok := types.TokenToDataType[p.curToken.Type]
 		if !ok {
-			// p.addError(ParserLogError,
-			// 	fmt.Sprintf("unknown data type %s", p.curToken.Literal))
 			return nil, fmt.Errorf("unknown data type %s", p.curToken.Literal)
 		}
 		field.DataType = dt
@@ -102,7 +100,7 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 	}
 
 	// make sure line ends correctly
-	if p.curToken.Type != l.TokenNewline && p.curToken.Type != l.TokenEOF && p.curToken.Type != l.TokenComment {
+	if p.curToken.Type != l.TokenEOF && p.curToken.Type != l.TokenComment {
 		// p.addError(ParserLogError, fmt.Sprintf("unexpected token at end of field: %s", p.curToken.Literal))
 		return nil, fmt.Errorf("unexpected token at end of field: %s", p.curToken.Literal)
 	}
@@ -120,7 +118,7 @@ func parseAttributes(p *Parser) (types.Attribute, error) {
 	p.advanceToken()
 
 	for p.curToken.Type != l.TokenEnumClose {
-		if p.curToken.Type == l.TokenEOF || p.curToken.Type == l.TokenNewline {
+		if p.curToken.Type == l.TokenEOF {
 			// p.addError(ParserLogError, fmt.Sprintf("unexpected EOF while parsing attributes"))
 			return 0, fmt.Errorf("unexpected EOF while parsing attributes")
 		}

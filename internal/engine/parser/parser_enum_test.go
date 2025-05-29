@@ -1,231 +1,130 @@
 package parser
 
 import (
-	"reflect"
 	"testing"
 
-	"willofdaedalus/mime/internal/engine/lexer"
+	l "willofdaedalus/mime/internal/engine/lexer"
 	"willofdaedalus/mime/internal/engine/types"
 )
 
-func TestEnumHandler(t *testing.T) {
+func TestEnumParsing(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
 		expected *types.EnumNode
+		wantErr  bool
 	}{
 		{
-			name: "simple enum with valid members",
-			input: `enum role ->
-			admin
-			user
-			Admin
-			end`,
+			name: "simple enum",
+			input: `enum user_role ->
+	admin
+	user
+end`,
 			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"admin", "user", "Admin"},
-			},
-		},
-		{
-			name: "duplicate enum member",
-			input: `enum role ->
-			admin
-			user
-			admin
-			end`,
-			expected: nil,
-		},
-		{
-			name: "empty enum list",
-			input: `enum role ->
-			end`,
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{},
-			},
-		},
-		{
-			name: "member starts with digit",
-			input: `enum role ->
-			1admin
-			end`,
-			expected: nil,
-		},
-		{
-			name: "member starts with underscore",
-			input: `enum role ->
-			# this is a comment
-			_admin123
-			end`,
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"_admin123"},
-			},
-		},
-		{
-			name: "member starts with symbol",
-			input: `enum role ->
-			#admin
-			end`,
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{},
-			},
-		},
-		{
-			name: "enum member is a keyword",
-			input: `enum role ->
-			enum
-			end`,
-			expected: nil,
-		},
-		{
-			name: "member starts with underscore",
-			input: `enum role ->
-			_admin
-			end`,
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"_admin"},
-			},
-		},
-		{
-			name: "unexpected token between members",
-			input: `enum role ->
-			admin
-			@
-			user
-			end`,
-			expected: nil,
-		},
-		{
-			name: "mixed valid and invalid members",
-			input: `enum role ->
-			admin
-			1user
-			user
-			admin
-			end`,
-			expected: nil,
-		},
-		{
-			name: "early EOF before end",
-			input: `enum role ->
-			admin
-			user`,
-			expected: nil,
-		},
-		{
-			name: "valid enum followed by garbage",
-			input: `enum role ->
-			admin
-			user
-			end garbage`,
-			expected: &types.EnumNode{
-				Name:    "role",
+				Name:    "user_role",
 				Members: []string{"admin", "user"},
 			},
+			wantErr: false,
 		},
-
-		// --- Additional Tests ---
-
 		{
-			name: "enum with only whitespace",
-			input: `enum role ->
-			
-			
-			end`,
+			name: "enum with many members",
+			input: `enum status ->
+	pending
+	approved
+	rejected
+	cancelled
+	processing
+end`,
 			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{},
+				Name:    "status",
+				Members: []string{"pending", "approved", "rejected", "cancelled", "processing"},
 			},
+			wantErr: false,
 		},
 		{
-			name: "enum with trailing comment after end",
-			input: `enum role ->
-			admin
-			user
-			end # no more roles`,
+			name: "enum with comments",
+			input: `enum priority ->
+	// high priority items
+	high
+	medium // default priority
+	low
+end`,
 			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"admin", "user"},
+				Name:    "priority",
+				Members: []string{"high", "medium", "low"},
 			},
+			wantErr: false,
 		},
 		{
-			name: "enum with inline comment on member line",
-			input: `enum role ->
-			admin # highest privileges
-			user
-			end`,
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"admin", "user"},
-			},
-		},
-		{
-			name:  "enum with windows line endings",
-			input: "enum role ->\r\nadmin\r\nuser\r\nend",
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"admin", "user"},
-			},
-		},
-		{
-			name: "enum name with invalid characters",
-			input: `enum ro$le ->
-			admin
-			end`,
+			name:     "empty enum should fail",
+			input:    `enum empty_enum ->\nend`,
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "enum with case-insensitive duplicates",
-			input: `enum role ->
-			admin
-			Admin
-			end`,
-			expected: &types.EnumNode{
-				Name:    "role",
-				Members: []string{"admin", "Admin"},
-			},
-		},
-		{
-			name: "enum missing name",
-			input: `enum ->
-			admin
-			end`,
+			name:     "enum without arrow should fail",
+			input:    `enum bad_enum\n\tadmin\nend`,
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "enum preceded by garbage",
-			input: `random garbage
-			enum role ->
-			admin
-			end`,
+			name:     "enum without end keyword should fail",
+			input:    `enum no_end ->\n\tadmin\n\tuser`,
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "enum ends with capital END",
-			input: `enum role ->
-			admin
-			END`,
+			name:     "enum without name should fail",
+			input:    `enum ->\n\tadmin\nend`,
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "enum with quoted string as member",
-			input: `enum role ->
-			"admin"
-			end`,
+			name:     "enum with invalid member tokens should fail",
+			input:    `enum test_enum ->\n\t123invalid\nend`,
 			expected: nil,
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser(lexer.New(tt.input))
-			actual := handleEnum(p)
+			lexer := l.New(tt.input)
+			parser := NewParser(lexer)
 
-			if !reflect.DeepEqual(actual, tt.expected) {
-				t.Fatalf("for test %s:\nexpected:\n%#v\ngot:\n%#v", tt.name, tt.expected, actual)
+			result, err := handleEnum(parser)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			enumNode, ok := result.(*types.EnumNode)
+			if !ok {
+				t.Errorf("expected *types.EnumNode, got %T", result)
+				return
+			}
+
+			if enumNode.Name != tt.expected.Name {
+				t.Errorf("expected name %s, got %s", tt.expected.Name, enumNode.Name)
+			}
+
+			if len(enumNode.Members) != len(tt.expected.Members) {
+				t.Errorf("expected %d members, got %d", len(tt.expected.Members), len(enumNode.Members))
+				return
+			}
+
+			for i, member := range enumNode.Members {
+				if member != tt.expected.Members[i] {
+					t.Errorf("expected member[%d] = %s, got %s", i, tt.expected.Members[i], member)
+				}
 			}
 		})
 	}

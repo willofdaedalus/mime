@@ -1,583 +1,620 @@
 package parser
 
 import (
-	"reflect"
 	"testing"
 
-	"willofdaedalus/mime/internal/engine/lexer"
+	l "willofdaedalus/mime/internal/engine/lexer"
+	"willofdaedalus/mime/internal/engine/types"
 )
 
-func TestParseEntity(t *testing.T) {
+func TestEntityParsing(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected *entityNode
+		expected *types.EntityNode
+		wantErr  bool
 	}{
 		{
-			name: "trailing garbage after end",
+			name: "simple entity with basic fields",
 			input: `entity user ->
-  name text
-end something`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name:     "name",
-						dt:       dataText,
-						consInfo: nil,
-						enums:    nil,
-					},
-				},
-			},
-		},
-		{
-			// this test is fine for the entityParser
-			// but the parser level will reject this for
-			// duplicate field names
-			name: "duplicated field names",
-			input: `entity user ->
-  name text
-  name int
-end`,
-			expected: nil,
-		},
-		{
-			name: "empty enum list",
-			input: `entity user ->
-  status text ()
-end`,
-			expected: nil,
-		},
-		{
-			name: "stray token between fields",
-			input: `entity user ->
-  name text
-  @
-  age int
-end`,
-			expected: nil,
-		},
-		{
-			name: "multiple entities in one input",
-			input: `entity user ->
-  name text
-end
-entity post ->
-  title text
-end`,
-			expected: &entityNode{ // optional: only if you're parsing one at a time
-				name: "user",
-				fields: []longField{
-					{name: "name", dt: dataText},
-				},
-			},
-		},
-		{
-			name: "missing end keyword",
-			input: `entity user ->
-  name text`,
-			expected: nil,
-		},
-		{
-			name: "invalid data type",
-			input: `entity user ->
-  name string
-end`,
-			expected: nil,
-		},
-		{
-			name: "field with missing type",
-			input: `entity user ->
-  name
-end`,
-			expected: nil,
-		},
-		{
-			name: "field with missing name",
-			input: `entity user ->
-  text
-end`,
-			expected: nil,
-		},
-		{
-			name:     "unterminated entity declaration",
-			input:    `entity user ->`,
-			expected: nil,
-		},
-		{
-			name: "invalid enum with nested parens",
-			input: `entity user ->
-  gender text (("male" "female"))
-end`,
-			expected: nil,
-		},
-		{
-			name: "enum without quotes",
-			input: `entity user ->
-  gender text (male female)
-end`,
-			expected: nil,
-		},
-		{
-			name: "enum with mixed types",
-			input: `entity user ->
-  status text ("active" true)
-end`,
-			expected: nil,
-		},
-		{
-			name:  "entity with trailing newline",
-			input: "entity user ->\nend\n",
-			expected: &entityNode{
-				name:   "user",
-				fields: nil,
-			},
-		},
-		{
-			name: "entity with one field and trailing comment",
-			input: `entity user ->
-  name text # user's full name
-end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{name: "name", dt: dataText},
-				},
-			},
-		},
-		{
-			name: "field names with underscores",
-			input: `entity user ->
-  full_name text
-  date_of_birth timestamp
-end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{name: "full_name", dt: dataText},
-					{name: "date_of_birth", dt: dataTimestamp},
-				},
-			},
-		},
-		{
-			name: "entity with fields and interspersed comments",
-			input: `entity user ->
-  # name of the user
-  name text
-  # age is optional
-  age int
-end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{name: "name", dt: dataText},
-					{name: "age", dt: dataInt},
-				},
-			},
-		},
-		{
-			name: "enum with one value",
-			input: `entity user ->
-  status text ("active")
-end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name:  "status",
-						dt:    dataText,
-						enums: []any{"active"},
-					},
-				},
-			},
-		},
-		{
-			name: "empty field list with comments",
-			input: `entity user ->
-  # this is a comment
-end`,
-			expected: &entityNode{
-				name:   "user",
-				fields: nil,
-			},
-		},
-		{
-			name: "invalid modifier syntax",
-			input: `entity user ->
-  age timestamp { default:18 }
-end`,
-			expected: nil, // unquoted default value should fail
-		},
-		{
-			name: "invalid enum type",
-			input: `entity user ->
-  status text ("active" true)
-end`,
-			expected: nil, // boolean is not a valid enum
-		},
-		{
-			name: "unterminated modifier block",
-			input: `entity user ->
-  id int { increment
-end`,
-			expected: nil,
-		},
-		{
-			name:  "simple entity",
-			input: `entity user -> end`,
-			expected: &entityNode{
-				name:   "user",
-				fields: nil,
-			},
-		},
-		{
-			name:  "single field",
-			input: `entity user -> name text end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{name: "name", dt: dataText},
-				},
-			},
-		},
-		{
-			name: "multiple fields",
-			input: `entity user ->
+	id uuid
 	name text
 	age int
 end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{name: "name", dt: dataText},
-					{name: "age", dt: dataInt},
+			expected: &types.EntityNode{
+				Name: "user",
+				Fields: []*types.Field{
+					{Name: "id", Kind: types.FieldPrimitive, DataType: types.DataUUID},
+					{Name: "name", Kind: types.FieldPrimitive, DataType: types.DataText},
+					{Name: "age", Kind: types.FieldPrimitive, DataType: types.DataInt},
 				},
 			},
+			wantErr: false,
 		},
 		{
-			name: "field with enums",
+			name: "entity with attributes",
 			input: `entity user ->
-	gender text ("male" "female")
+	id uuid [primary required]
+	name text [required unique]
+	password text [hash]
+	age int [default]
 end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
+			expected: &types.EntityNode{
+				Name: "user",
+				Fields: []*types.Field{
 					{
-						name:  "gender",
-						dt:    dataText,
-						enums: []any{"male", "female"},
+						Name: "id", Kind: types.FieldPrimitive, DataType: types.DataUUID,
+						Attributes: types.AttrPrimary | types.AttrRequired,
+					},
+					{
+						Name: "name", Kind: types.FieldPrimitive, DataType: types.DataText,
+						Attributes: types.AttrRequired | types.AttrUnique,
+					},
+					{
+						Name: "password", Kind: types.FieldPrimitive, DataType: types.DataText,
+						Attributes: types.AttrHash,
+					},
+					{
+						Name: "age", Kind: types.FieldPrimitive, DataType: types.DataInt,
+						Attributes: types.AttrDefault,
 					},
 				},
 			},
+			wantErr: false,
 		},
 		{
-			name: "field with enums",
-			input: `entity user ->
-	# this test will return nil because of the 7
-	gender text ("male" "female" 7)
+			name: "entity with reference field",
+			input: `entity note ->
+	id uuid
+	title text
+	owner @user.id
 end`,
-			expected: nil,
+			expected: &types.EntityNode{
+				Name: "note",
+				Fields: []*types.Field{
+					{Name: "id", Kind: types.FieldPrimitive, DataType: types.DataUUID},
+					{Name: "title", Kind: types.FieldPrimitive, DataType: types.DataText},
+					{
+						Name: "owner", Kind: types.FieldReference,
+						Target: &types.ReferenceTarget{Entity: "user", Field: "id"},
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name: "unclosed enums",
+			name: "entity with enum reference",
 			input: `entity user ->
-	gender text ("male" "female"
+	id uuid
+	name text
+	role &user_role
 end`,
-			expected: nil,
+			expected: &types.EntityNode{
+				Name: "user",
+				Fields: []*types.Field{
+					{Name: "id", Kind: types.FieldPrimitive, DataType: types.DataUUID},
+					{Name: "name", Kind: types.FieldPrimitive, DataType: types.DataText},
+					{
+						Name: "role", Kind: types.FieldEnum, DataType: types.DataEnum,
+						Target: &types.ReferenceTarget{Entity: "user_role"},
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name: "unclosed string",
-			input: `entity user ->
-	gender text ("male" "female
+			name: "entity with embedded entity",
+			input: `entity student ->
+	@person
+	gpa float
+	course text
 end`,
+			expected: &types.EntityNode{
+				Name: "student",
+				Fields: []*types.Field{
+					{Name: "person", Kind: types.FieldEmbedded},
+					{Name: "gpa", Kind: types.FieldPrimitive, DataType: types.DataReal},
+					{Name: "course", Kind: types.FieldPrimitive, DataType: types.DataText},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "complex entity with mixed field types",
+			input: `entity order ->
+	id uuid [primary]
+	@audit_info
+	customer @user.id [required]
+	status &order_status
+	total float [required]
+	created timestamp
+end`,
+			expected: &types.EntityNode{
+				Name: "order",
+				Fields: []*types.Field{
+					{
+						Name: "id", Kind: types.FieldPrimitive, DataType: types.DataUUID,
+						Attributes: types.AttrPrimary,
+					},
+					{Name: "audit_info", Kind: types.FieldEmbedded},
+					{
+						Name: "customer", Kind: types.FieldReference,
+						Target:     &types.ReferenceTarget{Entity: "user", Field: "id"},
+						Attributes: types.AttrRequired,
+					},
+					{
+						Name: "status", Kind: types.FieldEnum, DataType: types.DataEnum,
+						Target: &types.ReferenceTarget{Entity: "order_status"},
+					},
+					{
+						Name: "total", Kind: types.FieldPrimitive, DataType: types.DataReal,
+						Attributes: types.AttrRequired,
+					},
+					{Name: "created", Kind: types.FieldPrimitive, DataType: types.DataTimestamp},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "entity without name should fail",
+			input:    `entity ->\n\tid uuid\nend`,
 			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "entity without arrow should fail",
+			input:    `entity test\n\tid uuid\nend`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "entity with invalid field should fail",
+			input:    `entity test ->\n\t123invalid\nend`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "entity with malformed reference should fail",
+			input:    `entity test ->\n\towner @user\nend`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "entity with malformed enum reference should fail",
+			input:    `entity test ->\n\trole &\nend`,
+			expected: nil,
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser(lexer.New(tt.input))
-			actual := p.parseEntity()
+			lexer := l.New(tt.input)
+			parser := NewParser(lexer)
 
-			if !reflect.DeepEqual(actual, tt.expected) {
-				t.Fatalf("for %s:\nexpected:\n%v\ngot:\n%v", tt.name, tt.expected, actual)
+			result, err := handleEntity(parser)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			entityNode, ok := result.(*types.EntityNode)
+			if !ok {
+				t.Errorf("expected *types.EntityNode, got %T", result)
+				return
+			}
+
+			if entityNode.Name != tt.expected.Name {
+				t.Errorf("expected name %s, got %s", tt.expected.Name, entityNode.Name)
+			}
+
+			if len(entityNode.Fields) != len(tt.expected.Fields) {
+				t.Errorf("expected %d fields, got %d", len(tt.expected.Fields), len(entityNode.Fields))
+				return
+			}
+
+			for i, field := range entityNode.Fields {
+				expected := tt.expected.Fields[i]
+
+				if field.Name != expected.Name {
+					t.Errorf("field[%d]: expected name %s, got %s", i, expected.Name, field.Name)
+				}
+
+				if field.Kind != expected.Kind {
+					t.Errorf("field[%d]: expected kind %v, got %v", i, expected.Kind, field.Kind)
+				}
+
+				if field.DataType != expected.DataType {
+					t.Errorf("field[%d]: expected datatype %v, got %v", i, expected.DataType, field.DataType)
+				}
+
+				if field.Attributes != expected.Attributes {
+					t.Errorf("field[%d]: expected attributes %v, got %v", i, expected.Attributes, field.Attributes)
+				}
+
+				// Check reference targets
+				if expected.Target != nil {
+					if field.Target == nil {
+						t.Errorf("field[%d]: expected target but got nil", i)
+						continue
+					}
+					if field.Target.Entity != expected.Target.Entity {
+						t.Errorf("field[%d]: expected target entity %s, got %s", i, expected.Target.Entity, field.Target.Entity)
+					}
+					if field.Target.Field != expected.Target.Field {
+						t.Errorf("field[%d]: expected target field %s, got %s", i, expected.Target.Field, field.Target.Field)
+					}
+				} else if field.Target != nil {
+					t.Errorf("field[%d]: expected no target but got %+v", i, field.Target)
+				}
 			}
 		})
 	}
 }
 
-func TestParseEntityConstraints(t *testing.T) {
+func TestFieldParsing(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected *entityNode
+		expected *types.Field
+		wantErr  bool
 	}{
 		{
-			name: "simple constraint - unique",
-			input: `entity user ->
-			id int {unique fk}
-		end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "id",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind:  consUnique | consFK,
-							value: nil,
-						},
-					},
-				},
+			name:  "simple text field",
+			input: "name text",
+			expected: &types.Field{
+				Name:     "name",
+				Kind:     types.FieldPrimitive,
+				DataType: types.DataText,
 			},
+			wantErr: false,
 		},
 		{
-			name: "multiple constraints on one field",
-			input: `entity user ->
-		  id int {unique required}
-		end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "id",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind: consUnique | consRequired,
-						},
-					},
-				},
+			name:  "uuid field with primary attribute",
+			input: "id uuid [primary]",
+			expected: &types.Field{
+				Name:       "id",
+				Kind:       types.FieldPrimitive,
+				DataType:   types.DataUUID,
+				Attributes: types.AttrPrimary,
 			},
+			wantErr: false,
 		},
 		{
-			name: "multiple constraints with a default value",
-			input: `entity user ->
-			  age int {required default:"18"}
-			end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "age",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind:  consDefault | consRequired,
-							value: stringPtr("18"),
-						},
-					},
-				},
+			name:  "text field with multiple attributes",
+			input: "username text [required unique]",
+			expected: &types.Field{
+				Name:       "username",
+				Kind:       types.FieldPrimitive,
+				DataType:   types.DataText,
+				Attributes: types.AttrRequired | types.AttrUnique,
 			},
+			wantErr: false,
 		},
 		{
-			name: "primary key constraint",
-			input: `entity user ->
-				  id int {primary}
-				end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "id",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind: consPrimary,
-						},
-					},
-				},
+			name:  "reference field",
+			input: "owner @user.id",
+			expected: &types.Field{
+				Name:   "owner",
+				Kind:   types.FieldReference,
+				Target: &types.ReferenceTarget{Entity: "user", Field: "id"},
 			},
+			wantErr: false,
 		},
 		{
-			name: "autoincrement constraint",
-			input: `entity user ->
-				  id int {increment}
-				end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "id",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind: consIncrement,
-						},
-					},
-				},
+			name:  "enum reference field",
+			input: "status &order_status",
+			expected: &types.Field{
+				Name:     "status",
+				Kind:     types.FieldEnum,
+				DataType: types.DataEnum,
+				Target:   &types.ReferenceTarget{Entity: "order_status"},
 			},
+			wantErr: false,
 		},
 		{
-			name: "constraint with unexpected tokens",
-			input: `entity user ->
-				  id int {primary 123}
-				end`,
+			name:  "embedded field",
+			input: "@person",
+			expected: &types.Field{
+				Name: "person",
+				Kind: types.FieldEmbedded,
+			},
+			wantErr: false,
+		},
+		{
+			name:  "int field with increment",
+			input: "counter int [increment]",
+			expected: &types.Field{
+				Name:       "counter",
+				Kind:       types.FieldPrimitive,
+				DataType:   types.DataInt,
+				Attributes: types.AttrIncrement,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "field without name should fail",
+			input:    "text",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "default constraint with improper value for float",
-			input: `entity user ->
-				  balance float {default:"abc"}
-				end`,
+			name:     "field with invalid type should fail",
+			input:    "name invalidtype",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "foreign key constraint",
-			input: `entity post ->
-				  user_id int {fk}
-				end`,
-			expected: &entityNode{
-				name: "post",
-				fields: []longField{
-					{
-						name: "user_id",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind: consFK,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "unclosed constraint",
-			input: `entity user ->
-				  id int {unique
-				end`,
+			name:     "reference without dot should fail",
+			input:    "owner @user",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "invalid constraint",
-			input: `entity user ->
-				  id int {unknown}
-				end`,
+			name:     "reference without field should fail",
+			input:    "owner @user.",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "constraint on unsupported type",
-			input: `entity user ->
-				  created_at timestamp {unique}
-				end`,
+			name:     "enum reference without name should fail",
+			input:    "status &",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "constraint with missing value",
-			input: `entity user ->
-				  status text {default:}
-				end`,
+			name:     "embedded without name should fail",
+			input:    "@",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "constraint with value on constraint that doesn't support values",
-			input: `entity user ->
-				  id int {unique:"yes"}
-				end`,
+			name:     "unclosed attributes should fail",
+			input:    "name text [required",
 			expected: nil,
+			wantErr:  true,
 		},
 		{
-			name: "type mismatch in default value",
-			input: `entity user ->
-				  age int {default:"not-a-int"}
-				end`,
+			name:     "invalid attribute should fail",
+			input:    "name text [invalidattr]",
 			expected: nil,
-		},
-		{
-			name: "default constraint with value",
-			input: `entity user ->
-				active int {default:"1"}
-			end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "active",
-						dt:   dataInt,
-						consInfo: &constraintInfo{
-							kind:  consDefault,
-							value: stringPtr("1"),
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "default constraint for text field",
-			input: `entity user ->
-				  status text {default:"active"}
-				end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "status",
-						dt:   dataText,
-						consInfo: &constraintInfo{
-							kind:  consDefault,
-							value: stringPtr("active"),
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "constraints with enum",
-			input: `entity user ->
-				  role text ("admin" "user") {unique}
-				end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name:  "role",
-						dt:    dataText,
-						enums: []any{"admin", "user"},
-						consInfo: &constraintInfo{
-							kind: consUnique,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "newline within constraint block",
-			input: `entity user ->
-				  id int {
-				    primary
-				  }
-				end`,
-			expected: nil,
-		},
-		{
-			name: "default constraint with proper value for float",
-			input: `entity user ->
-				  balance float {default:"123.45"}
-				end`,
-			expected: &entityNode{
-				name: "user",
-				fields: []longField{
-					{
-						name: "balance",
-						dt:   dataReal,
-						consInfo: &constraintInfo{
-							kind:  consDefault,
-							value: stringPtr("123.45"),
-						},
-					},
-				},
-			},
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser(lexer.New(tt.input))
-			actual := p.parseEntity()
+			// Add newline to simulate proper field ending
+			input := tt.input + "\n"
+			lexer := l.New(input)
+			parser := NewParser(lexer)
 
-			if !reflect.DeepEqual(actual, tt.expected) {
-				t.Fatalf("for %s:\nexpected:\n%v\ngot:\n%v", tt.name, tt.expected, actual)
+			result, err := parseField(parser)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if result.Name != tt.expected.Name {
+				t.Errorf("expected name %s, got %s", tt.expected.Name, result.Name)
+			}
+
+			if result.Kind != tt.expected.Kind {
+				t.Errorf("expected kind %v, got %v", tt.expected.Kind, result.Kind)
+			}
+
+			if result.DataType != tt.expected.DataType {
+				t.Errorf("expected datatype %v, got %v", tt.expected.DataType, result.DataType)
+			}
+
+			if result.Attributes != tt.expected.Attributes {
+				t.Errorf("expected attributes %v, got %v", tt.expected.Attributes, result.Attributes)
+			}
+
+			// Check reference targets
+			if tt.expected.Target != nil {
+				if result.Target == nil {
+					t.Errorf("expected target but got nil")
+					return
+				}
+				if result.Target.Entity != tt.expected.Target.Entity {
+					t.Errorf("expected target entity %s, got %s", tt.expected.Target.Entity, result.Target.Entity)
+				}
+				if result.Target.Field != tt.expected.Target.Field {
+					t.Errorf("expected target field %s, got %s", tt.expected.Target.Field, result.Target.Field)
+				}
+			} else if result.Target != nil {
+				t.Errorf("expected no target but got %+v", result.Target)
 			}
 		})
 	}
 }
 
-// Helper function to create string pointers for the tests
-func stringPtr(s string) *string {
-	return &s
+func TestAttributeParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected types.Attribute
+		wantErr  bool
+	}{
+		{
+			name:     "single attribute",
+			input:    "[required]",
+			expected: types.AttrRequired,
+			wantErr:  false,
+		},
+		{
+			name:     "multiple attributes",
+			input:    "[required unique primary]",
+			expected: types.AttrRequired | types.AttrUnique | types.AttrPrimary,
+			wantErr:  false,
+		},
+		{
+			name:  "all valid attributes",
+			input: "[default hash unique required increment override primary hidden readonly]",
+			expected: types.AttrDefault | types.AttrHash | types.AttrUnique | types.AttrRequired |
+				types.AttrIncrement | types.AttrOverride | types.AttrPrimary | types.AttrHidden | types.AttrReadonly,
+			wantErr: false,
+		},
+		{
+			name:     "empty attributes should work",
+			input:    "[]",
+			expected: 0,
+			wantErr:  false,
+		},
+		{
+			name:     "unclosed bracket should fail",
+			input:    "[required",
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid attribute should fail",
+			input:    "[invalidattr]",
+			expected: 0,
+			wantErr:  true,
+		},
+		{
+			name:     "no opening bracket should fail",
+			input:    "required]",
+			expected: 0,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lexer := l.New(tt.input)
+			parser := NewParser(lexer)
+
+			result, err := parseAttributes(parser)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if result != tt.expected {
+				t.Errorf("expected attributes %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// Stress tests to try and break the parser
+func TestParserStressTests(t *testing.T) {
+	stressTests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{
+			name: "deeply nested references",
+			input: `entity deep ->
+	ref1 @level1.ref2
+	ref2 @level2.ref3
+	ref3 @level3.ref4
+end`,
+			wantErr: false,
+		},
+		{
+			name: "entity with many fields",
+			input: `entity huge ->
+	field1 text
+	field2 int
+	field3 uuid
+	field4 bool
+	field5 timestamp
+	field6 float
+	field7 text [required]
+	field8 int [unique]
+	field9 uuid [primary]
+	field10 @embedded1
+	field11 @embedded2
+	field12 &enum1
+	field13 &enum2
+	ref1 @entity1.id
+	ref2 @entity2.name
+end`,
+			wantErr: false,
+		},
+		{
+			name: "mixed comments everywhere",
+			input: `// comment before entity
+entity test -> // comment after arrow
+	// comment before field
+	id uuid [primary] // comment after field
+	// another comment
+	name text // final comment
+	// comment before end
+end // comment after end`,
+			wantErr: false,
+		},
+		{
+			name: "empty lines and whitespace",
+			input: `entity test ->
+
+	id uuid
+
+	name text
+
+end`,
+			wantErr: false,
+		},
+		{
+			name:    "malformed nested brackets",
+			input:   `entity test ->\n\tid uuid [required [nested]]\nend`,
+			wantErr: true,
+		},
+		{
+			name:    "missing keywords",
+			input:   `test ->\n\tid uuid\nend`,
+			wantErr: true,
+		},
+		{
+			name:    "unterminated entity",
+			input:   `entity test ->\n\tid uuid`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range stressTests {
+		t.Run(tt.name, func(t *testing.T) {
+			lexer := l.New(tt.input)
+			parser := NewParser(lexer)
+
+			_, err := handleEntity(parser)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error but got none for input: %s", tt.input)
+			}
+
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v for input: %s", err, tt.input)
+			}
+		})
+	}
 }

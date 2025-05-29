@@ -58,8 +58,12 @@ func handleEntity(p *Parser) (node, error) {
 	p.advanceToken() // consume '->'
 
 	for p.curToken.Type != lexer.TokenEnd {
-		if p.curToken.Type == lexer.TokenComment {
+		for p.curToken.Type == lexer.TokenComment || p.curToken.Type == lexer.TokenNewline {
 			p.advanceToken()
+		}
+
+		if p.curToken.Type == lexer.TokenEnd {
+			break
 		}
 
 		f, err := parseField(p)
@@ -69,6 +73,7 @@ func handleEntity(p *Parser) (node, error) {
 
 		entity.Fields = append(entity.Fields, f)
 	}
+	fmt.Println("skipped fields")
 
 	return entity, nil
 }

@@ -64,9 +64,10 @@ func handleEnum(p *Parser) (node, error) {
 		p.advanceToken()
 	}
 
-	if len(enumNode.Members) == 0 {
-		return (node)(nil), fmt.Errorf("empty enums are not allowed")
-	}
+	// ANOTHER ONE THAT THE AST SHOULD HANDLE
+	// if len(enumNode.Members) == 0 {
+	// 	return (node)(nil), fmt.Errorf("empty enums are not allowed")
+	// }
 
 	return enumNode, nil
 }

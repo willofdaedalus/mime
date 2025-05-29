@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+
 	"willofdaedalus/mime/internal/engine/types"
 )
 
@@ -71,8 +72,8 @@ func (f FieldAttributes) validateAttributeConflicts() error {
 		// optional warning — not fatal
 		fmt.Printf("warning: field %s has both primary and unique (redundant)\n", f.Name)
 	}
-	if attrs&AttrOverride != 0 && dt != types.DataEntity && dt != TypeArray {
-		fmt.Printf("warning: field %s uses override but isn't a nested/array field\n", f.Name)
-	}
+	// if attrs&AttrOverride != 0 && dt != types.DataEntity && dt != TypeArray {
+	// 	fmt.Printf("warning: field %s uses override but isn't a nested/array field\n", f.Name)
+	// }
 	return nil
 }
