@@ -1,7 +1,10 @@
 package parser
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	l "willofdaedalus/mime/internal/engine/lexer"
 	"willofdaedalus/mime/internal/engine/types"
@@ -593,5 +596,355 @@ end`,
 				t.Errorf("unexpected error: %v for input: %s", err, tt.input)
 			}
 		})
+	}
+}
+
+// Additional stress tests to add to your existing test suite
+
+func TestParserEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		// Unicode and special characters
+		// 		{
+		// 			name: "unicode field names",
+		// 			input: `entity tëst ->
+		// 	naïve_field text
+		// 	café_name text
+		// end`,
+		// 			wantErr: true, // Unicode not supported
+		// 		},
+		{
+			name: "very long identifiers",
+			input: `entity this_is_a_very_long_entity_name_that_might_break_something ->
+	this_is_also_a_very_long_field_name_that_could_cause_issues text
+end`,
+			wantErr: false,
+		},
+
+		// Whitespace edge cases
+		{
+			name:    "tabs vs spaces mixing",
+			input:   "entity test ->\n\tid uuid\n    name text\nend", // mixed tabs and spaces
+			wantErr: false,                                           // depends on your lexer
+		},
+		{
+			name:    "trailing whitespace after tokens",
+			input:   "entity test ->   \n\tid uuid   \n\tname text   \nend   ",
+			wantErr: false,
+		},
+		{
+			name:    "windows line endings",
+			input:   "entity test ->\r\n\tid uuid\r\n\tname text\r\nend",
+			wantErr: false,
+		},
+
+		// Comment edge cases
+		{
+			name: "comments with special characters",
+			input: `entity test ->
+	# This is a comment with @#$%^&*()
+	id uuid # Another comment with symbols !@#
+	name text # Comment with unicode: café naïve
+end`,
+			wantErr: false,
+		},
+		{
+			name: "very long comments",
+			input: `entity test ->
+	# ` + strings.Repeat("This is a very long comment ", 100) + `
+	id uuid
+end`,
+			wantErr: false,
+		},
+
+		// Boundary conditions
+		{
+			name:    "single character entity name",
+			input:   "entity a ->\n\tid uuid\nend",
+			wantErr: false,
+		},
+		{
+			name:    "single character field name",
+			input:   "entity test ->\n\tx text\nend",
+			wantErr: false,
+		},
+		{
+			name:    "numbers in identifiers",
+			input:   "entity user2 ->\n\tid2 uuid\n\tfield_3 text\nend",
+			wantErr: false,
+		},
+
+		// Malformed brackets and symbols
+		{
+			name:    "unmatched opening bracket",
+			input:   "entity test ->\n\tid uuid [\nend",
+			wantErr: true,
+		},
+		{
+			name:    "unmatched closing bracket",
+			input:   "entity test ->\n\tid uuid ]\nend",
+			wantErr: true,
+		},
+		{
+			name:    "double opening brackets",
+			input:   "entity test ->\n\tid uuid [[required]]\nend",
+			wantErr: true,
+		},
+		{
+			name:    "empty reference target",
+			input:   "entity test ->\n\tref @\nend",
+			wantErr: true,
+		},
+		{
+			name:    "multiple dots in reference",
+			input:   "entity test ->\n\tref @user..id\nend",
+			wantErr: true,
+		},
+		{
+			name:    "reference starting with dot",
+			input:   "entity test ->\n\tref @.user.id\nend",
+			wantErr: true,
+		},
+
+		// // Enum edge cases
+		// {
+		// 	name:    "duplicate enum members",
+		// 	input:   "enum status ->\n\tpending\n\tpending\nend",
+		// 	wantErr: true, // should probably be an error
+		// },
+		{
+			name:    "enum member with numbers",
+			input:   "enum status ->\n\tstatus_1\n\tstatus_2\nend",
+			wantErr: false,
+		},
+
+		// Attribute edge cases
+		{
+			name:    "duplicate attributes",
+			input:   "entity test ->\n\tid uuid [required required]\nend",
+			wantErr: false, // might be ok, just redundant
+		},
+		{
+			name:    "attributes with extra spaces",
+			input:   "entity test ->\n\tid uuid [ required  unique ]\nend",
+			wantErr: false,
+		},
+		{
+			name:    "attributes on wrong field types",
+			input:   "entity test ->\n\t@embedded [required]\nend",
+			wantErr: true, // embedded fields shouldn't have attributes
+		},
+
+		// Circular references (if you want to catch these at parse time)
+		{
+			name: "self reference",
+			input: `entity user ->
+	id uuid
+	parent @user.id
+end`,
+			wantErr: false, // this is actually valid
+		},
+
+		// Case sensitivity tests
+		{
+			name:    "mixed case keywords",
+			input:   "Entity test ->\n\tid UUID\nEnd",
+			wantErr: true, // assuming keywords are case sensitive
+		},
+		{
+			name:    "mixed case attributes",
+			input:   "entity test ->\n\tid uuid [Required]\nend",
+			wantErr: true, // assuming attributes are case sensitive
+		},
+
+		// Empty input edge cases
+		{
+			name:    "completely empty input",
+			input:   "",
+			wantErr: true,
+		},
+		{
+			name:    "only whitespace",
+			input:   "   \n\t\n   ",
+			wantErr: true,
+		},
+		{
+			name:    "only comments",
+			input:   "# just a comment\n# another comment",
+			wantErr: true,
+		},
+
+		// Malformed arrows and keywords
+		{
+			name:    "wrong arrow direction",
+			input:   "entity test <-\n\tid uuid\nend",
+			wantErr: true,
+		},
+		{
+			name:    "multiple arrows",
+			input:   "entity test -> ->\n\tid uuid\nend",
+			wantErr: true,
+		},
+		{
+			name:    "space in arrow",
+			input:   "entity test - >\n\tid uuid\nend",
+			wantErr: true,
+		},
+
+		// Premature EOF
+		{
+			name:    "EOF after entity keyword",
+			input:   "entity",
+			wantErr: true,
+		},
+		{
+			name:    "EOF after entity name",
+			input:   "entity test",
+			wantErr: true,
+		},
+		{
+			name:    "EOF after arrow",
+			input:   "entity test ->",
+			wantErr: true,
+		},
+		{
+			name:    "EOF in middle of field",
+			input:   "entity test ->\n\tid",
+			wantErr: true,
+		},
+		{
+			name:    "EOF in middle of attributes",
+			input:   "entity test ->\n\tid uuid [required",
+			wantErr: true,
+		},
+
+		// Very large constructs
+		{
+			name: "entity with maximum reasonable fields",
+			input: func() string {
+				var sb strings.Builder
+				sb.WriteString("entity huge ->\n")
+				for i := 0; i < 1000; i++ {
+					sb.WriteString(fmt.Sprintf("\tfield_%d text\n", i))
+				}
+				sb.WriteString("end")
+				return sb.String()
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "enum with many members",
+			input: func() string {
+				var sb strings.Builder
+				sb.WriteString("enum huge_enum ->\n")
+				for i := 0; i < 500; i++ {
+					sb.WriteString(fmt.Sprintf("\tmember_%d\n", i))
+				}
+				sb.WriteString("end")
+				return sb.String()
+			}(),
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lexer := l.New(tt.input)
+			parser := NewParser(lexer)
+
+			// Determine what type of construct we're testing based on input
+			var result interface{}
+			var err error
+			if strings.HasPrefix(strings.TrimSpace(tt.input), "entity") {
+				result, err = handleEntity(parser)
+			} else if strings.HasPrefix(strings.TrimSpace(tt.input), "enum") {
+				result, err = handleEnum(parser)
+			} else {
+				// Default to entity for ambiguous cases
+				result, err = handleEntity(parser)
+			}
+
+			if tt.wantErr && err == nil {
+				t.Errorf("expected error but got none for input: %q", tt.input)
+			}
+
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v for input: %q", err, tt.input)
+			}
+
+			_ = result // avoid unused variable warning
+		})
+	}
+}
+
+// Test concurrent parsing (if your parser needs to be thread-safe)
+func TestConcurrentParsing(t *testing.T) {
+	input := `entity user ->
+	id uuid [primary]
+	name text [required]
+	email text [unique]
+end`
+
+	const numGoroutines = 100
+	errors := make(chan error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func() {
+			lexer := l.New(input)
+			parser := NewParser(lexer)
+			_, err := handleEntity(parser)
+			errors <- err
+		}()
+	}
+
+	for i := 0; i < numGoroutines; i++ {
+		if err := <-errors; err != nil {
+			t.Errorf("concurrent parsing failed: %v", err)
+		}
+	}
+}
+
+// Memory pressure test
+func TestParsingMemoryPressure(t *testing.T) {
+	// Create a very large but valid entity definition
+	var sb strings.Builder
+	sb.WriteString("entity stress_test ->\n")
+
+	// Add many different types of fields
+	for i := 0; i < 10000; i++ {
+		fieldType := []string{"text", "int", "uuid", "bool", "float", "timestamp"}[i%6]
+		sb.WriteString(fmt.Sprintf("\tfield_%d %s\n", i, fieldType))
+
+		// Occasionally add references and enums
+		if i%100 == 0 {
+			sb.WriteString(fmt.Sprintf("\tref_%d @other_entity.id\n", i))
+		}
+		if i%150 == 0 {
+			sb.WriteString(fmt.Sprintf("\tenum_%d &some_enum\n", i))
+		}
+		if i%200 == 0 {
+			sb.WriteString("\t@embedded_entity\n")
+		}
+	}
+	sb.WriteString("end")
+
+	lexer := l.New(sb.String())
+	parser := NewParser(lexer)
+
+	start := time.Now()
+	result, err := handleEntity(parser)
+	duration := time.Since(start)
+
+	if err != nil {
+		t.Errorf("memory pressure test failed: %v", err)
+	}
+
+	t.Logf("Parsed large entity in %v", duration)
+
+	if entity, ok := result.(*types.EntityNode); ok {
+		t.Logf("Successfully parsed entity with %d fields", len(entity.Fields))
 	}
 }
