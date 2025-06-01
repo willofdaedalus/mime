@@ -64,6 +64,7 @@ var Keywords = map[string]TokenType{
 	"text":      TokenTypeText,
 	"timestamp": TokenTypeTimestamp,
 	"uuid":      TokenTypeUuid,
+	"bool":      TokenTypeBool,
 	"routes":    TokenTypeRoutes,
 	"alter":     TokenAlter,
 	"ref":       TokenRef,

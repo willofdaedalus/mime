@@ -32,6 +32,10 @@ func (e entityNode) NodeLiteral() string {
 }
 
 func handleEntity(p *Parser) (node, error) {
+	for p.curType() == l.TokenComment {
+		p.advanceToken()
+	}
+
 	if p.curType() != l.TokenEntity {
 		return nil, fmt.Errorf("expected entity token, got %s", p.curToken.Type)
 	}
@@ -57,10 +61,6 @@ func handleEntity(p *Parser) (node, error) {
 			p.advanceToken()
 			continue
 		}
-
-		// if p.curToken.Type == l.TokenEnd {
-		// 	break
-		// }
 
 		f, err := parseField(p)
 		if err != nil {

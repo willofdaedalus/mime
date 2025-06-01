@@ -8,7 +8,7 @@ import (
 )
 
 func handleEnum(p *Parser) (node, error) {
-	if !expectTokOf(p.curToken, lexer.TokenEnum) {
+	if p.curType() != lexer.TokenEnum {
 		return nil, fmt.Errorf("expected enum, got %s", p.curToken.Type)
 	}
 	p.advanceToken() // consume enum
@@ -42,7 +42,7 @@ func handleEnum(p *Parser) (node, error) {
 		}
 
 		if p.curToken.Type != lexer.TokenIdent {
-			return (node)(nil), fmt.Errorf("expected enum member got %s", p.curToken.Type)
+			return (node)(nil), fmt.Errorf("expected enum member got %s", p.curToken.Literal)
 		}
 
 		v := p.curToken.Literal

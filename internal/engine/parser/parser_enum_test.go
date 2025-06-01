@@ -44,11 +44,11 @@ end`,
 		{
 			name: "enum with comments",
 			input: `enum priority ->
-	// high priority items
-	high
-	medium // default priority
-	low
-end`,
+			# high priority items
+			high
+			medium # default priority
+			low
+			end`,
 			expected: &types.EnumNode{
 				Name:    "priority",
 				Members: []string{"high", "medium", "low"},

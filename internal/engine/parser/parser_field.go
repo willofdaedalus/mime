@@ -63,26 +63,28 @@ func parseFieldTarget(p *Parser, field *types.Field) (*types.Field, error) {
 }
 
 func parseReference(p *Parser, field *types.Field) (*types.Field, error) {
+	var fieldName string
 	// consume '@'
 	p.advanceToken()
 
-	// Get entity name
+	// get entity name
 	if p.curToken.Type != l.TokenIdent {
 		return nil, fmt.Errorf("expected entity name after '@', got %s", p.curToken.Literal)
 	}
 	entityName := p.curToken.Literal
 	p.advanceToken()
 
-	// Check for dot (for entity.field)
-	var fieldName string
-	if p.curToken.Type == l.TokenDot {
-		p.advanceToken() // consume '.'
-		if p.curToken.Type != l.TokenIdent {
-			return nil, fmt.Errorf("expected field name after '.', got %s", p.curToken.Literal)
-		}
-		fieldName = p.curToken.Literal
-		p.advanceToken()
+	// check for dot (for entity.field)
+	if p.curType() != l.TokenDot {
+		return nil, fmt.Errorf("expected '.' accessor after referenced entity, got %s", p.curToken.Literal)
 	}
+	p.advanceToken() // consume '.'
+
+	if p.curType() != l.TokenIdent {
+		return nil, fmt.Errorf("expected field name after '.', got %s", p.curToken.Literal)
+	}
+	fieldName = p.curToken.Literal
+	p.advanceToken()
 
 	field.Kind = types.FieldReference
 	field.Target = &types.ReferenceTarget{
@@ -90,6 +92,7 @@ func parseReference(p *Parser, field *types.Field) (*types.Field, error) {
 		Field:  fieldName, // empty if just @entity
 	}
 
+	// references are not allowed to mutate their referenced field attributes
 	if p.nextToken.Type == l.TokenEnumOpen {
 		return nil, fmt.Errorf("referenced fields inherit referenced attributes and cannot be changed")
 	}
@@ -121,7 +124,7 @@ func parseEnumReference(p *Parser, field *types.Field) (*types.Field, error) {
 }
 
 func parsePrimitiveType(p *Parser, field *types.Field) (*types.Field, error) {
-	dt, ok := types.TokenToDataType[p.curToken.Type]
+	dt, ok := types.TokenToDataType[p.curType()]
 	if !ok {
 		return nil, fmt.Errorf("unknown data type %s", p.curToken.Literal)
 	}
@@ -146,6 +149,10 @@ func parsePrimitiveType(p *Parser, field *types.Field) (*types.Field, error) {
 func parseAttributes(p *Parser) (types.Attribute, error) {
 	var attribute types.Attribute
 
+	if p.curType() != l.TokenEnumOpen {
+		return 0, fmt.Errorf("unopened attributes closed. check your syntax")
+	}
+
 	p.advanceToken()
 
 	for p.curType() != l.TokenEnumClose {
@@ -161,6 +168,7 @@ func parseAttributes(p *Parser) (types.Attribute, error) {
 		attribute |= attr
 		p.advanceToken()
 	}
+
 	p.advanceToken() // consume the closing ']'
 
 	return attribute, nil

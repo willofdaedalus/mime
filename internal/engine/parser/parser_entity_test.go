@@ -529,8 +529,8 @@ end`,
 	field7 text [required]
 	field8 int [unique]
 	field9 uuid [primary]
-	field10 @embedded1
-	field11 @embedded2
+	@embedded1
+	@embedded2
 	field12 &enum1
 	field13 &enum2
 	ref1 @entity1.id
@@ -540,14 +540,14 @@ end`,
 		},
 		{
 			name: "mixed comments everywhere",
-			input: `// comment before entity
-entity test -> // comment after arrow
-	// comment before field
-	id uuid [primary] // comment after field
-	// another comment
-	name text // final comment
-	// comment before end
-end // comment after end`,
+			input: `# comment before entity
+entity test -> # comment after arrow
+	# comment before field
+	id uuid [primary] # comment after field
+	# another comment
+	name text # final comment
+	# comment before end
+end # comment after end`,
 			wantErr: false,
 		},
 		{
