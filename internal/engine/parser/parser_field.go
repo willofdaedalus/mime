@@ -8,101 +8,132 @@ import (
 )
 
 func parseField(p *Parser) (*types.Field, error) {
-	field := &types.Field{}
-
-	// check for embed (@entity)
-	if p.curToken.Type == l.TokenAtSymbol {
-		p.advanceToken() // consume @
-
-		if p.curToken.Type != l.TokenIdent {
-			return nil, fmt.Errorf("expected entity name after '@', got %s", p.curToken.Literal)
-			// p.addError(ParserLogError,
-			// 	fmt.Sprintf("expected entity name after '@', got %s", p.curToken.Literal))
-		}
-		field.Name = p.curToken.Literal
-
-		p.advanceToken() // consume entity name
-
-		// after @entity, the next token must be newline or comment
-		if p.curToken.Type != l.TokenComment && p.curToken.Type != l.TokenEOF {
-			// p.addError(ParserLogError,
-			// 	fmt.Sprintf("expected entity name after '@', got %s", p.curToken.Literal))
-			return nil, fmt.Errorf("unexpected token after embedded entity: %s", p.curToken.Literal)
-		}
-
-		p.advanceToken() // consume the last token
-
-		field.Kind = types.FieldEmbedded
-		return field, nil
+	// handle embedded entity: @entity
+	if p.curType() == l.TokenAtSymbol {
+		return parseEmbeddedField(p)
 	}
 
-	// otherwise, treat as primitive field
-	return parseFieldNormal(p)
+	return parseRegularField(p)
 }
 
-func parseFieldNormal(p *Parser) (*types.Field, error) {
+func parseEmbeddedField(p *Parser) (*types.Field, error) {
+	field := &types.Field{}
+	p.advanceToken() // consume the @
+
+	// get entity name
+	if p.curToken.Type != l.TokenIdent {
+		return nil, fmt.Errorf("expected entity name after '@', got %s", p.curToken.Literal)
+	}
+
+	field.Name = p.curToken.Literal
+	field.Kind = types.FieldEmbedded
+	p.advanceToken()
+
+	return field, nil
+}
+
+func parseRegularField(p *Parser) (*types.Field, error) {
 	field := &types.Field{}
 
-	// field name
+	// get field name
 	if p.curToken.Type != l.TokenIdent {
-		// p.addError(ParserLogError,
-		// 	fmt.Sprintf("expected field name, got %s", p.curToken.Literal))
-		return nil, fmt.Errorf("expected field name, got %q %q", p.curToken.Literal, p.curToken.Type)
+		return nil, fmt.Errorf("expected field name, got %s", p.curToken.Literal)
 	}
 	field.Name = p.curToken.Literal
 	p.advanceToken()
 
-	// check for reference (@entity.field) or data type
-	if p.curToken.Type == l.TokenAtSymbol {
-		p.advanceToken() // skip the @ symbol
-		refs, err := parseReferenceTarget(p)
-		if err != nil {
-			return nil, err // return error instead of just adding to log
-		}
+	// Parse the target (could be @entity.field, &enum, or primitive type)
+	return parseFieldTarget(p, field)
+}
 
-		field.Target = refs
-		field.Kind = types.FieldReference
-		p.advanceToken() // consume the field name from reference
-	} else if p.curToken.Type == l.TokenAmpersand {
-		// handle enum reference (&enum_name)
-		p.advanceToken() // consume &
+func parseFieldTarget(p *Parser, field *types.Field) (*types.Field, error) {
+	switch p.curToken.Type {
+	case l.TokenAtSymbol:
+		// reference: @entity.field
+		return parseReference(p, field)
+
+	case l.TokenAmpersand:
+		// enum: &enum_name
+		return parseEnumReference(p, field)
+
+	default:
+		// Primitive type
+		return parsePrimitiveType(p, field)
+	}
+}
+
+func parseReference(p *Parser, field *types.Field) (*types.Field, error) {
+	// consume '@'
+	p.advanceToken()
+
+	// Get entity name
+	if p.curToken.Type != l.TokenIdent {
+		return nil, fmt.Errorf("expected entity name after '@', got %s", p.curToken.Literal)
+	}
+	entityName := p.curToken.Literal
+	p.advanceToken()
+
+	// Check for dot (for entity.field)
+	var fieldName string
+	if p.curToken.Type == l.TokenDot {
+		p.advanceToken() // consume '.'
 		if p.curToken.Type != l.TokenIdent {
-			return nil, fmt.Errorf("expected enum name after '&', got %s", p.curToken.Literal)
+			return nil, fmt.Errorf("expected field name after '.', got %s", p.curToken.Literal)
 		}
-
-		field.Kind = types.FieldEnum
-		field.DataType = types.DataEnum
-		// might not be the best way to handle enums
-		field.Target = &types.ReferenceTarget{
-			Entity: p.curToken.Literal,
-		}
-
-		p.advanceToken()
-	} else {
-		// regular data type
-		dt, ok := types.TokenToDataType[p.curToken.Type]
-		if !ok {
-			return nil, fmt.Errorf("unknown data type %s", p.curToken.Literal)
-		}
-		field.DataType = dt
-		field.Kind = types.FieldPrimitive
+		fieldName = p.curToken.Literal
 		p.advanceToken()
 	}
 
-	// parse attributes if present
-	if p.curToken.Type == l.TokenEnumOpen {
-		attrs, err := parseAttributes(p)
+	field.Kind = types.FieldReference
+	field.Target = &types.ReferenceTarget{
+		Entity: entityName,
+		Field:  fieldName, // empty if just @entity
+	}
+
+	return field, nil
+}
+
+func parseEnumReference(p *Parser, field *types.Field) (*types.Field, error) {
+	// Consume '&'
+	p.advanceToken()
+
+	if p.curToken.Type != l.TokenIdent {
+		return nil, fmt.Errorf("expected enum name after '&', got %s", p.curToken.Literal)
+	}
+
+	field.Kind = types.FieldEnum
+	field.DataType = types.DataEnum
+	field.Target = &types.ReferenceTarget{
+		Entity: p.curToken.Literal,
+	}
+	p.advanceToken()
+
+	// if there are constraints
+	// not sure if I'm adding these or not for enums but we'll see
+	if p.curType() == l.TokenEnumOpen {
+	}
+
+	return field, nil
+}
+
+func parsePrimitiveType(p *Parser, field *types.Field) (*types.Field, error) {
+	dt, ok := types.TokenToDataType[p.curToken.Type]
+	if !ok {
+		return nil, fmt.Errorf("unknown data type %s", p.curToken.Literal)
+	}
+
+	field.DataType = dt
+	field.Kind = types.FieldPrimitive
+	p.advanceToken()
+
+	// if there are constraints
+	if p.curType() == l.TokenEnumOpen {
+		attr, err := parseAttributes(p)
 		if err != nil {
 			return nil, err
 		}
 
-		field.Attributes = attrs
-	}
-
-	// make sure line ends correctly
-	if p.curToken.Type != l.TokenEOF && p.curToken.Type != l.TokenComment {
-		// p.addError(ParserLogError, fmt.Sprintf("unexpected token at end of field: %s", p.curToken.Literal))
-		return nil, fmt.Errorf("unexpected token at end of field: %s", p.curToken.Literal)
+		field.Attributes = attr
 	}
 
 	return field, nil
@@ -111,53 +142,22 @@ func parseFieldNormal(p *Parser) (*types.Field, error) {
 func parseAttributes(p *Parser) (types.Attribute, error) {
 	var attribute types.Attribute
 
-	if p.curToken.Type != l.TokenEnumOpen {
-		// p.addError(ParserLogError, fmt.Sprintf("expected '[' to start attributes"))
-		return 0, fmt.Errorf("expected '[' to start attributes")
-	}
 	p.advanceToken()
 
-	for p.curToken.Type != l.TokenEnumClose {
-		if p.curToken.Type == l.TokenEOF {
+	for p.curType() != l.TokenEnumClose {
+		if p.curType() == l.TokenEOF {
 			// p.addError(ParserLogError, fmt.Sprintf("unexpected EOF while parsing attributes"))
 			return 0, fmt.Errorf("unexpected EOF while parsing attributes")
 		}
 
-		if p.curToken.Type == l.TokenIdent {
-			attr, ok := types.LiteralToAttr[p.curToken.Literal]
-			if !ok {
-				return 0, fmt.Errorf("unknown attribute: %s", p.curToken.Literal)
-			}
-			attribute |= attr
-			p.advanceToken()
+		attr, ok := types.LiteralToAttr[p.curToken.Literal]
+		if !ok {
+			return 0, fmt.Errorf("unknown attribute: %s", p.curToken.Literal)
 		}
+		attribute |= attr
+		p.advanceToken()
 	}
-
 	p.advanceToken() // consume the closing ']'
 
 	return attribute, nil
-}
-
-func parseReferenceTarget(p *Parser) (*types.ReferenceTarget, error) {
-	// example field that satisfies this
-	// owner @user.id
-	target := &types.ReferenceTarget{}
-
-	if p.curToken.Type != l.TokenIdent {
-		return nil, fmt.Errorf("expected entity name, got %s", p.curToken.Literal)
-	}
-	target.Entity = p.curToken.Literal
-	p.advanceToken()
-
-	if p.curToken.Type != l.TokenDot {
-		return nil, fmt.Errorf("expected '.', got %s", p.curToken.Literal)
-	}
-	p.advanceToken()
-
-	if p.curToken.Type != l.TokenIdent {
-		return nil, fmt.Errorf("expected field name, got %s", p.curToken.Literal)
-	}
-	target.Field = p.curToken.Literal
-
-	return target, nil
 }

@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	"willofdaedalus/mime/internal/engine/lexer"
+	l "willofdaedalus/mime/internal/engine/lexer"
 	"willofdaedalus/mime/internal/engine/types"
 )
 
@@ -32,15 +32,12 @@ func (e entityNode) NodeLiteral() string {
 }
 
 func handleEntity(p *Parser) (node, error) {
-	if !expectTokOf(p.curToken, lexer.TokenEntity) {
-		// p.pushError(fmt.Sprintf("expected entity token, got %s", p.curToken.Type))
+	if p.curType() != l.TokenEntity {
 		return nil, fmt.Errorf("expected entity token, got %s", p.curToken.Type)
 	}
 	p.advanceToken() // consume 'entity'
 
-	if !expectTokOf(p.curToken, lexer.TokenIdent) {
-		// p.pushError(fmt.Sprintf("expected entity name, got %s", p.curToken.Type))
-		// fmt.Println("expected entity name")
+	if p.curType() != l.TokenIdent {
 		return nil, fmt.Errorf("expected entity name, got %s", p.curToken.Type)
 	}
 
@@ -50,21 +47,20 @@ func handleEntity(p *Parser) (node, error) {
 	p.advanceToken() // consume entity name
 
 	// check for arrow token
-	if !expectTokOf(p.curToken, lexer.TokenArrow) {
-		// p.pushError(fmt.Sprintf("expected -> after entity name, got %s", p.curToken.Type))
-		// fmt.Println("expected -> after entity name")
+	if p.curType() != l.TokenArrow {
 		return nil, fmt.Errorf("expected -> after entity name, got %s", p.curToken.Type)
 	}
 	p.advanceToken() // consume '->'
 
-	for p.curToken.Type != lexer.TokenEnd {
-		for p.curToken.Type == lexer.TokenComment || p.curToken.Type == lexer.TokenNewline {
+	for p.curType() != l.TokenEnd {
+		if p.curToken.Type == l.TokenComment {
 			p.advanceToken()
+			continue
 		}
 
-		if p.curToken.Type == lexer.TokenEnd {
-			break
-		}
+		// if p.curToken.Type == l.TokenEnd {
+		// 	break
+		// }
 
 		f, err := parseField(p)
 		if err != nil {
@@ -73,7 +69,6 @@ func handleEntity(p *Parser) (node, error) {
 
 		entity.Fields = append(entity.Fields, f)
 	}
-	fmt.Println("skipped fields")
 
 	return entity, nil
 }

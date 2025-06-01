@@ -45,7 +45,7 @@ func (l Lexer) RenderTokens() {
 	tok := l.NextToken()
 
 	for tok.Type != TokenEOF {
-		fmt.Printf("%v\n", tok)
+		fmt.Printf("[%v]\n", tok)
 		tok = l.NextToken()
 	}
 }
@@ -59,9 +59,6 @@ func (l *Lexer) NextToken() Token {
 	switch l.ch {
 	case '.':
 		tok = newToken(TokenDot, l.ch)
-	case '{':
-		tok = newToken(TokenConsOpen, l.ch)
-	case '}':
 		tok = newToken(TokenConsClose, l.ch)
 	case '#':
 		tok = newToken(TokenComment, l.ch)
@@ -70,16 +67,12 @@ func (l *Lexer) NextToken() Token {
 		tok = newToken(TokenEnumOpen, l.ch)
 	case ']':
 		tok = newToken(TokenEnumClose, l.ch)
-	case '(':
-		tok = newToken(TokenListOpen, l.ch)
-	case ')':
-		tok = newToken(TokenListClose, l.ch)
 	case ':':
 		tok = newToken(TokenColon, l.ch)
 	case '@':
 		tok = newToken(TokenAtSymbol, l.ch)
-	case '\n':
-		tok = newToken(TokenNewline, l.ch)
+	// case '\n':
+	// 	tok = newToken(TokenNewline, l.ch)
 	case '&':
 		tok = newToken(TokenAmpersand, l.ch)
 	case '*':
@@ -132,10 +125,8 @@ func (l *Lexer) skipComment() {
 }
 
 func (l *Lexer) skipWhitespace() {
-	if l.ch != '\n' {
-		for l.ch != 0 && unicode.IsSpace(rune(l.ch)) {
-			l.readChar()
-		}
+	for l.ch != 0 && unicode.IsSpace(rune(l.ch)) {
+		l.readChar()
 	}
 }
 

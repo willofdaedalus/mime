@@ -90,3 +90,7 @@ func (p *Parser) pushError(msg string) {
 func (p *Parser) resetContext() {
 	p.invalidParsing = false
 }
+
+func (p *Parser) curType() lexer.TokenType {
+	return p.curToken.Type
+}
