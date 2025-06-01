@@ -59,7 +59,6 @@ func (l *Lexer) NextToken() Token {
 	switch l.ch {
 	case '.':
 		tok = newToken(TokenDot, l.ch)
-		tok = newToken(TokenConsClose, l.ch)
 	case '#':
 		tok = newToken(TokenComment, l.ch)
 		l.skipComment()

@@ -37,12 +37,12 @@ func parseRegularField(p *Parser) (*types.Field, error) {
 
 	// get field name
 	if p.curToken.Type != l.TokenIdent {
-		return nil, fmt.Errorf("expected field name, got %s", p.curToken.Literal)
+		return nil, fmt.Errorf("expected field name, got [%s]", p.curToken.Type)
 	}
 	field.Name = p.curToken.Literal
 	p.advanceToken()
 
-	// Parse the target (could be @entity.field, &enum, or primitive type)
+	// parse the target (could be @entity.field, &enum, or primitive type)
 	return parseFieldTarget(p, field)
 }
 
@@ -57,7 +57,7 @@ func parseFieldTarget(p *Parser, field *types.Field) (*types.Field, error) {
 		return parseEnumReference(p, field)
 
 	default:
-		// Primitive type
+		// primitive type
 		return parsePrimitiveType(p, field)
 	}
 }
@@ -88,6 +88,10 @@ func parseReference(p *Parser, field *types.Field) (*types.Field, error) {
 	field.Target = &types.ReferenceTarget{
 		Entity: entityName,
 		Field:  fieldName, // empty if just @entity
+	}
+
+	if p.nextToken.Type == l.TokenEnumOpen {
+		return nil, fmt.Errorf("referenced fields inherit referenced attributes and cannot be changed")
 	}
 
 	return field, nil

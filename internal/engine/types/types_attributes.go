@@ -44,6 +44,7 @@ var LiteralToAttr = map[string]Attribute{
 	"readonly":  AttrReadonly,
 	"hidden":    AttrHidden,
 	"required":  AttrRequired,
+	"default":   AttrDefault,
 }
 
 // helper function to convert string to attribute

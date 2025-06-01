@@ -17,10 +17,10 @@ func TestEntityParsing(t *testing.T) {
 		{
 			name: "simple entity with basic fields",
 			input: `entity user ->
-	id uuid
-	name text
-	age int
-end`,
+			id uuid
+			name text
+			age int
+		end`,
 			expected: &types.EntityNode{
 				Name: "user",
 				Fields: []*types.Field{
@@ -34,11 +34,11 @@ end`,
 		{
 			name: "entity with attributes",
 			input: `entity user ->
-	id uuid [primary required]
-	name text [required unique]
-	password text [hash]
-	age int [default]
-end`,
+			id uuid [primary required]
+			name text [required unique]
+			password text [hash]
+			age int [default]
+		end`,
 			expected: &types.EntityNode{
 				Name: "user",
 				Fields: []*types.Field{
@@ -65,10 +65,10 @@ end`,
 		{
 			name: "entity with reference field",
 			input: `entity note ->
-	id uuid
-	title text
-	owner @user.id
-end`,
+			id uuid
+			title text
+			owner @user.id
+		end`,
 			expected: &types.EntityNode{
 				Name: "note",
 				Fields: []*types.Field{
@@ -85,10 +85,10 @@ end`,
 		{
 			name: "entity with enum reference",
 			input: `entity user ->
-	id uuid
-	name text
-	role &user_role
-end`,
+			id uuid
+			name text
+			role &user_role
+		end`,
 			expected: &types.EntityNode{
 				Name: "user",
 				Fields: []*types.Field{
@@ -105,10 +105,10 @@ end`,
 		{
 			name: "entity with embedded entity",
 			input: `entity student ->
-	@person
-	gpa float
-	course text
-end`,
+			@person
+			gpa float
+			course text
+		end`,
 			expected: &types.EntityNode{
 				Name: "student",
 				Fields: []*types.Field{
@@ -129,31 +129,8 @@ end`,
 	total float [required]
 	created timestamp
 end`,
-			expected: &types.EntityNode{
-				Name: "order",
-				Fields: []*types.Field{
-					{
-						Name: "id", Kind: types.FieldPrimitive, DataType: types.DataUUID,
-						Attributes: types.AttrPrimary,
-					},
-					{Name: "audit_info", Kind: types.FieldEmbedded},
-					{
-						Name: "customer", Kind: types.FieldReference,
-						Target:     &types.ReferenceTarget{Entity: "user", Field: "id"},
-						Attributes: types.AttrRequired,
-					},
-					{
-						Name: "status", Kind: types.FieldEnum, DataType: types.DataEnum,
-						Target: &types.ReferenceTarget{Entity: "order_status"},
-					},
-					{
-						Name: "total", Kind: types.FieldPrimitive, DataType: types.DataReal,
-						Attributes: types.AttrRequired,
-					},
-					{Name: "created", Kind: types.FieldPrimitive, DataType: types.DataTimestamp},
-				},
-			},
-			wantErr: false,
+			expected: nil,
+			wantErr:  true,
 		},
 		{
 			name:     "entity without name should fail",

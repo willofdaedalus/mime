@@ -70,5 +70,5 @@ func handleEntity(p *Parser) (node, error) {
 		entity.Fields = append(entity.Fields, f)
 	}
 
-	return entity, nil
+	return &entity, nil
 }
