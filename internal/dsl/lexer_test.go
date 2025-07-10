@@ -1,4 +1,4 @@
-package lexer
+package dsl
 
 import "testing"
 
@@ -51,7 +51,7 @@ end
 	// routes ->
 	// 	GET /users/me -> self.id
 
-	l := New(input)
+	l := NewLexer(input)
 
 	for i, tt := range tests {
 		tok := l.NextToken()

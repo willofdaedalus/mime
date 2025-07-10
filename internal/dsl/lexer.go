@@ -1,6 +1,6 @@
 // Copyright (c) 2016-2017 Thorsten Ball
 // Licensed under the MIT License. See LICENSE for details.
-package lexer
+package dsl
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ type Token struct {
 	LineNum  int
 }
 
-func New(input string) *Lexer {
+func NewLexer(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
 	return l
@@ -37,6 +37,7 @@ func (l *Lexer) readChar() {
 	} else {
 		l.ch = l.input[l.readPosition]
 	}
+
 	l.position = l.readPosition
 	l.readPosition += 1
 }
@@ -82,6 +83,7 @@ func (l *Lexer) NextToken() Token {
 		if unicode.IsLetter(rune(l.peekChar())) {
 			tok.Literal = l.collectEndpointStr()
 			tok.Type = TokenEndpoint
+
 			return tok
 		}
 		tok = newToken(TokenUnknown, l.ch)
@@ -91,6 +93,7 @@ func (l *Lexer) NextToken() Token {
 		if tok.Literal == "UNKNOWN" {
 			tok.Type = TokenUnknown
 		}
+
 		return tok
 	case 0:
 		tok.Literal = ""
@@ -99,6 +102,7 @@ func (l *Lexer) NextToken() Token {
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = lookUpIdent(tok.Literal)
+
 			return tok
 		} else if unicode.IsDigit(rune(l.ch)) {
 			tok.Type = TokenDigits
@@ -107,6 +111,7 @@ func (l *Lexer) NextToken() Token {
 				tok.Type = TokenDigitsFloat
 			}
 			tok.Literal = v
+
 			return tok
 		} else {
 			tok = newToken(TokenUnknown, l.ch)
@@ -114,6 +119,7 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	l.readChar()
+
 	return tok
 }
 
@@ -133,8 +139,10 @@ func (l *Lexer) matchOrUnknown(expected byte, multiType, singleType TokenType) T
 	if l.peekChar() == expected {
 		ch := l.ch
 		l.readChar()
+
 		return Token{Type: multiType, Literal: string(ch) + string(l.ch)}
 	}
+
 	return newToken(singleType, l.ch)
 }
 
@@ -158,6 +166,7 @@ func (l *Lexer) readNumber() (string, bool) {
 			for unicode.IsDigit(rune(l.ch)) {
 				l.readChar()
 			}
+
 			return l.input[start:l.position], isFloat // return full float number
 		}
 	}
@@ -172,6 +181,7 @@ func (l *Lexer) collectEndpointStr() string {
 	for l.ch != ' ' && l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
+
 	return l.input[start:l.position]
 }
 
@@ -193,6 +203,7 @@ func (l *Lexer) readString() string {
 	}
 
 	l.readChar() // consume the closing quote
+
 	return l.input[start+1 : l.position-1]
 }
 

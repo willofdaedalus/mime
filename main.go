@@ -1,6 +1,6 @@
 package main
 
-import "willofdaedalus/mime/internal/engine/lexer"
+import "willofdaedalus/mime/internal/dsl"
 
 func main() {
 	input := `
@@ -17,6 +17,6 @@ func main() {
 	POST /todos -> payload
 	DELETE /todos/:id -> self.id
 	`
-	l := lexer.New(input)
+	l := dsl.NewLexer(input)
 	l.RenderTokens()
 }

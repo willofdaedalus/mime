@@ -1,6 +1,6 @@
 package types
 
-import "willofdaedalus/mime/internal/engine/lexer"
+import "willofdaedalus/mime/internal/dsl"
 
 type FieldKind int
 
@@ -69,13 +69,13 @@ const (
 	DataOther
 )
 
-var TokenToDataType = map[lexer.TokenType]DataType{
-	lexer.TokenTypeText:      DataText,
-	lexer.TokenTypeInt:       DataInt,
-	lexer.TokenTypeFloat:     DataReal,
-	lexer.TokenTypeTimestamp: DataTimestamp,
-	lexer.TokenTypeUuid:      DataUUID,
-	lexer.TokenTypeBool:      DataBool,
+var TokenToDataType = map[dsl.TokenType]DataType{
+	dsl.TokenTypeText:      DataText,
+	dsl.TokenTypeInt:       DataInt,
+	dsl.TokenTypeFloat:     DataReal,
+	dsl.TokenTypeTimestamp: DataTimestamp,
+	dsl.TokenTypeUuid:      DataUUID,
+	dsl.TokenTypeBool:      DataBool,
 }
 
 func (e EntityNode) NodeLiteral() string {
