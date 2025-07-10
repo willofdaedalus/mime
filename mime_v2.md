@@ -1,7 +1,10 @@
 # MIME Engine Specification
 
 ## Overview
-MIME is a declarative DSL-driven system that enables defining entities, routes, and validation rules in a structured manner. It functions as an SQLite-backed execution engine, allowing users to define and interact with data models via a REPL or predefined routes.
+MIME is a declarative DSL-driven system that enables defining entities, routes,
+and validation rules in a structured manner. It functions as an SQLite-backed
+execution engine, allowing users to define and interact with data models via a
+REPL or predefined routes.
 
 ## Architecture
 ### 1. Core Data Handling
