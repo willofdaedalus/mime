@@ -178,6 +178,8 @@ func (t TokenType) String() string {
 		return "TOKEN_digits"
 	case TokenDigitsFloat:
 		return "TOKEN_digitsfloat"
+	case TokenAtSymbol:
+		return "TOKEN_atsymbol"
 	case TokenGet:
 		return "TOKEN_get"
 	case TokenPost:
