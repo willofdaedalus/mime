@@ -1,4 +1,48 @@
 package dsl
 
-type Parser struct {
+type node interface {
+	// this will serve as the node's identifier
+	NodeLiteral() string
+}
+
+type keywordHandler func(parser *Parser) (node, error)
+
+var handlers = map[TokenType]keywordHandler{
+	TokenEntity: handleEntity,
+}
+
+func NewParser(l *Lexer) *Parser {
+	p := &Parser{
+		lexer: l,
+	}
+	// first call assigns the next token to nextToken
+	// and the subsequent one assigns curToken to nextToken
+	p.advanceToken()
+	p.advanceToken()
+
+	return p
+}
+
+func (p *Parser) advanceToken() {
+	p.curToken = p.nextToken
+	p.nextToken = p.lexer.NextToken()
+}
+
+func (p *Parser) ParseTokens() error {
+	var curLiteral string
+
+	for p.curToken.Type != TokenEOF {
+		curLiteral = p.curToken.Literal
+
+		if handler, ok := handlers[p.curToken.Type]; ok {
+			v, err := handler(p)
+			if err != nil {
+				return err
+			}
+
+			p.nodes[curLiteral] = v
+		}
+	}
+
+	return nil
 }

@@ -2,6 +2,16 @@ package dsl
 
 type fieldType int
 
+type Parser struct {
+	lexer          *Lexer
+	curToken       Token
+	nextToken      Token
+	errors         []error
+	nodes          map[string]node
+	invalidParsing bool
+	// parserErrors   []parserError
+}
+
 const (
 	typeNumber fieldType = iota + 1
 	typeText
