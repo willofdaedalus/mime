@@ -31,6 +31,7 @@ const (
 	TokenTypeUuid      // uuid
 	TokenTypeRoutes    // routes
 	// keywords
+	TokenApp      // app
 	TokenAlter    // alter
 	TokenEnum     // enum
 	TokenRef      // ref
@@ -88,6 +89,7 @@ var Keywords = map[string]TokenType{
 	"ref":       TokenRef,
 	"self":      TokenSelf,
 	"end":       TokenEnd,
+	"app":       TokenApp,
 	// http verbs
 	"GET":    TokenGet,
 	"POST":   TokenPost,

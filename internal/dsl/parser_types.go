@@ -19,10 +19,6 @@ const (
 	typeFloat
 )
 
-type EntityNode struct {
-	EntityName string
-}
-
 type entityField struct {
 	name      string
 	fieldType fieldType

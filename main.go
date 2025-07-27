@@ -18,5 +18,6 @@ func main() {
 	DELETE /todos/:id -> self.id
 	`
 	l := dsl.NewLexer(input)
-	l.RenderTokens()
+	p := dsl.NewParser(l)
+	p.ParseTokens()
 }

@@ -7,24 +7,6 @@ import (
 	"unicode"
 )
 
-type TokenType int
-
-// lexer struct
-type Lexer struct {
-	input        string
-	position     int  // current position in input
-	readPosition int  // next position to read
-	ch           byte // current character being examined
-}
-
-// token struct
-type Token struct {
-	FileName string
-	Type     TokenType
-	Literal  string
-	LineNum  int
-}
-
 func NewLexer(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
