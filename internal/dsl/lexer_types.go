@@ -40,10 +40,10 @@ const (
 	TokenEndpoint // /employees/:id
 	// symbols
 	TokenArrow     // ->
-	TokenEnumOpen  // (
-	TokenEnumClose // )
-	TokenListOpen  // [
-	TokenListClose // ]
+	TokenAttrOpen  // [
+	TokenAttrClose // ]
+	// TokenListOpen  // [
+	// TokenListClose // ]
 	TokenConsOpen  // {
 	TokenConsClose // }
 	TokenComment   // #
@@ -74,7 +74,7 @@ const (
 	TokenUnknown
 )
 
-var Keywords = map[string]TokenType{
+var keywords = map[string]TokenType{
 	// normal keywords
 	"entity":    TokenEntity,
 	"enum":      TokenEnum,
@@ -120,11 +120,11 @@ var allConstraints = map[TokenType]struct{}{
 	TokenConstraintNotNull:       {},
 }
 
-var AnnotationOpens = map[TokenType]struct{}{
-	TokenEnumOpen: {},
-	TokenListOpen: {},
-	TokenConsOpen: {},
-}
+// var AnnotationOpens = map[TokenType]struct{}{
+// 	TokenAttrOpen: {},
+// 	// TokenListOpen: {},
+// 	TokenConsOpen: {},
+// }
 
 func IsValidMemberOf(tt TokenType, list map[TokenType]struct{}) bool {
 	_, ok := list[tt]
@@ -132,7 +132,7 @@ func IsValidMemberOf(tt TokenType, list map[TokenType]struct{}) bool {
 }
 
 func lookUpIdent(ident string) TokenType {
-	if tok, ok := Keywords[ident]; ok {
+	if tok, ok := keywords[ident]; ok {
 		return tok
 	}
 
@@ -170,14 +170,14 @@ func (t TokenType) String() string {
 		return "TOKEN_endpoint"
 	case TokenArrow:
 		return "TOKEN_arrow"
-	case TokenEnumOpen:
+	case TokenAttrOpen:
 		return "TOKEN_enumopen"
-	case TokenEnumClose:
+	case TokenAttrClose:
 		return "TOKEN_enumclose"
-	case TokenListOpen:
-		return "TOKEN_listopen"
-	case TokenListClose:
-		return "TOKEN_listclose"
+	// case TokenListOpen:
+	// 	return "TOKEN_listopen"
+	// case TokenListClose:
+	// 	return "TOKEN_listclose"
 	case TokenConsOpen:
 		return "TOKEN_consopen"
 	case TokenConsClose:

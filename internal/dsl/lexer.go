@@ -46,9 +46,9 @@ func (l *Lexer) NextToken() Token {
 		tok = newToken(TokenComment, l.ch)
 		l.skipComment()
 	case '[':
-		tok = newToken(TokenEnumOpen, l.ch)
+		tok = newToken(TokenAttrOpen, l.ch)
 	case ']':
-		tok = newToken(TokenEnumClose, l.ch)
+		tok = newToken(TokenAttrClose, l.ch)
 	case ':':
 		tok = newToken(TokenColon, l.ch)
 	case '@':
