@@ -11,44 +11,43 @@ import (
 // the rules of the data type i.e they're not compatitible with the data
 // the struct immediately refuses
 
-type Attribute int
+type attribute int
 
 const (
-	AttrDefault Attribute = 1 << iota
+	AttrDefault attribute = 1 << iota
 	AttrHash
 	AttrUnique
 	AttrRequired
 	AttrIncrement
-	AttrOverride
-	AttrPrimary
 	AttrHidden
 	AttrReadonly
+	AttrCheck
 )
 
-var allowedAttrsByType = map[DataType]Attribute{
-	DataText:      AttrDefault | AttrRequired | AttrUnique | AttrHash | AttrHidden | AttrReadonly,
-	DataInt:       AttrDefault | AttrRequired | AttrUnique | AttrIncrement | AttrHidden | AttrReadonly | AttrPrimary,
-	DataReal:      AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly,
-	DataUUID:      AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly | AttrPrimary,
+var allowedAttrsByType = map[dataType]attribute{
+	DataText: AttrDefault | AttrRequired | AttrUnique | AttrHash | AttrHidden | AttrReadonly,
+	// DataInt:       AttrDefault | AttrRequired | AttrUnique | AttrIncrement | AttrHidden | AttrReadonly | AttrPrimary,
+	DataReal: AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly,
+	// DataUUID:      AttrDefault | AttrRequired | AttrUnique | AttrHidden | AttrReadonly | AttrPrimary,
 	DataTimestamp: AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
 	DataBool:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
 	DataEnum:      AttrDefault | AttrRequired | AttrHidden | AttrReadonly,
 }
 
-var LiteralToAttr = map[string]Attribute{
+var LiteralToAttr = map[string]attribute{
 	"hash":      AttrHash,
 	"increment": AttrIncrement,
-	"override":  AttrOverride,
 	"unique":    AttrUnique,
-	"primary":   AttrPrimary,
-	"readonly":  AttrReadonly,
-	"hidden":    AttrHidden,
-	"required":  AttrRequired,
-	"default":   AttrDefault,
+	// "override":  AttrOverride,
+	// "primary":   AttrPrimary,
+	"readonly": AttrReadonly,
+	"hidden":   AttrHidden,
+	"required": AttrRequired,
+	"default":  AttrDefault,
 }
 
 // helper function to convert string to attribute
-func StringToAttribute(s string) (Attribute, error) {
+func StringToAttribute(s string) (attribute, error) {
 	switch strings.ToLower(s) {
 	case "default":
 		return AttrDefault, nil
@@ -60,10 +59,10 @@ func StringToAttribute(s string) (Attribute, error) {
 		return AttrRequired, nil
 	case "increment", "auto_increment":
 		return AttrIncrement, nil
-	case "override":
-		return AttrOverride, nil
-	case "primary":
-		return AttrPrimary, nil
+	// case "override":
+	// 	return AttrOverride, nil
+	// case "primary":
+	// 	return AttrPrimary, nil
 	case "hidden":
 		return AttrHidden, nil
 	case "readonly":
@@ -76,80 +75,80 @@ func StringToAttribute(s string) (Attribute, error) {
 // Validation helpers
 
 // ValidateFieldAttributes checks if the given attributes are valid for the field's data type
-func ValidateFieldAttributes(field *Field) error {
-	if field.Kind == FieldEmbedded || field.Kind == FieldReference {
-		// For embedded and reference fields, only certain attributes make sense
-		allowedForRefs := AttrRequired | AttrHidden | AttrReadonly | AttrOverride
-		if field.Attributes & ^allowedForRefs != 0 {
-			return fmt.Errorf("invalid attributes for %s field '%s'",
-				fieldKindToString(field.Kind), field.Name)
-		}
-		return nil
-	}
-
-	// for primitive fields, check against the allowed attributes map
-	allowed, exists := allowedAttrsByType[field.DataType]
-	if !exists {
-		return fmt.Errorf("no attribute validation rules for data type %v", field.DataType)
-	}
-
-	// check if any disallowed attributes are set
-	if field.Attributes & ^allowed != 0 {
-		return fmt.Errorf("invalid attributes for %s field '%s' with type %s",
-			fieldKindToString(field.Kind), field.Name, dataTypeToString(field.DataType))
-	}
-
-	// additional validation rules
-	if err := validateAttributeCombinations(field); err != nil {
-		return err
-	}
-
-	return nil
-}
+// func ValidateFieldAttributes(field *field) error {
+// 	if field.Kind == FieldEmbedded || field.Kind == FieldReference {
+// 		// For embedded and reference fields, only certain attributes make sense
+// 		allowedForRefs := AttrRequired | AttrHidden | AttrReadonly | AttrOverride
+// 		if field.Attributes & ^allowedForRefs != 0 {
+// 			return fmt.Errorf("invalid attributes for %s field '%s'",
+// 				fieldKindToString(field.Kind), field.Name)
+// 		}
+// 		return nil
+// 	}
+//
+// 	// for primitive fields, check against the allowed attributes map
+// 	allowed, exists := allowedAttrsByType[field.DataType]
+// 	if !exists {
+// 		return fmt.Errorf("no attribute validation rules for data type %v", field.DataType)
+// 	}
+//
+// 	// check if any disallowed attributes are set
+// 	if field.Attributes & ^allowed != 0 {
+// 		return fmt.Errorf("invalid attributes for %s field '%s' with type %s",
+// 			fieldKindToString(field.Kind), field.Name, dataTypeToString(field.DataType))
+// 	}
+//
+// 	// additional validation rules
+// 	if err := validateAttributeCombinations(field); err != nil {
+// 		return err
+// 	}
+//
+// 	return nil
+// }
 
 // ValidateAttributeCombinations checks for conflicting attribute combinations
-func validateAttributeCombinations(field *Field) error {
-	attrs := field.Attributes
-
-	// primary key implies unique and required
-	if attrs&AttrPrimary != 0 {
-		if attrs&AttrUnique == 0 {
-			return fmt.Errorf("primary key field '%s' must also be unique", field.Name)
-		}
-		if attrs&AttrRequired == 0 {
-			return fmt.Errorf("primary key field '%s' must also be required", field.Name)
-		}
-	}
-
-	// auto-increment typically implies unique and required (for int fields)
-	if attrs&AttrIncrement != 0 {
-		if field.DataType != DataInt {
-			return fmt.Errorf("auto-increment attribute only valid for int fields, got %s",
-				dataTypeToString(field.DataType))
-		}
-		if attrs&AttrRequired == 0 {
-			return fmt.Errorf("auto-increment field '%s' should be required", field.Name)
-		}
-	}
-
-	// hash attribute validation
-	if attrs&AttrHash != 0 {
-		if field.DataType != DataText {
-			return fmt.Errorf("hash attribute only valid for text fields, got %s",
-				dataTypeToString(field.DataType))
-		}
-	}
-
-	// readonly and default don't make sense together typically
-	if attrs&AttrReadonly != 0 && attrs&AttrDefault != 0 {
-		return fmt.Errorf("readonly and default attributes conflict for field '%s'", field.Name)
-	}
-
-	return nil
-}
+// func validateAttributeCombinations(field *field) error {
+// 	attrs := field.Attributes
+//
+// 	// primary key implies unique and required
+// 	if attrs&AttrPrimary != 0 {
+// 		if attrs&AttrUnique == 0 {
+// 			return fmt.Errorf("primary key field '%s' must also be unique", field.Name)
+// 		}
+// 		if attrs&AttrRequired == 0 {
+// 			return fmt.Errorf("primary key field '%s' must also be required", field.Name)
+// 		}
+// 	}
+//
+// 	// auto-increment typically implies unique and required (for int fields)
+// 	if attrs&AttrIncrement != 0 {
+// 		if field.DataType != DataInt {
+// 			return fmt.Errorf("auto-increment attribute only valid for int fields, got %s",
+// 				dataTypeToString(field.DataType))
+// 		}
+// 		if attrs&AttrRequired == 0 {
+// 			return fmt.Errorf("auto-increment field '%s' should be required", field.Name)
+// 		}
+// 	}
+//
+// 	// hash attribute validation
+// 	if attrs&AttrHash != 0 {
+// 		if field.DataType != DataText {
+// 			return fmt.Errorf("hash attribute only valid for text fields, got %s",
+// 				dataTypeToString(field.DataType))
+// 		}
+// 	}
+//
+// 	// readonly and default don't make sense together typically
+// 	if attrs&AttrReadonly != 0 && attrs&AttrDefault != 0 {
+// 		return fmt.Errorf("readonly and default attributes conflict for field '%s'", field.Name)
+// 	}
+//
+// 	return nil
+// }
 
 // helper function to convert field kind to string for error messages
-func fieldKindToString(kind FieldKind) string {
+func fieldKindToString(kind fieldKind) string {
 	switch kind {
 	case FieldPrimitive:
 		return "primitive"
@@ -163,7 +162,7 @@ func fieldKindToString(kind FieldKind) string {
 }
 
 // helper function to convert data type to string for error messages
-func dataTypeToString(dt DataType) string {
+func dataTypeToString(dt dataType) string {
 	switch dt {
 	case DataText:
 		return "text"
@@ -185,14 +184,14 @@ func dataTypeToString(dt DataType) string {
 }
 
 // batch validation function for multiple fields
-func ValidateFields(fields []*Field) []error {
-	var errors []error
-
-	for _, field := range fields {
-		if err := ValidateFieldAttributes(field); err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	return errors
-}
+// func ValidateFields(fields []*field) []error {
+// 	var errors []error
+//
+// 	for _, field := range fields {
+// 		if err := ValidateFieldAttributes(field); err != nil {
+// 			errors = append(errors, err)
+// 		}
+// 	}
+//
+// 	return errors
+// }

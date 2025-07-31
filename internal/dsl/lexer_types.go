@@ -64,12 +64,14 @@ const (
 	TokenPut    // PUT
 	TokenDelete // DELETE
 	// constraints
-	TokenConstraintAutoIncrement // increment
-	TokenConstraintUnique        // unique
-	TokenConstraintForeignKey    // fk
-	TokenConstraintPrimaryKey    // primary
-	TokenConstraintNotNull       // required
-	TokenConstraintDefault       // default
+	TokenAttrIncrement // increment
+	TokenAttrUnique    // unique
+	TokenAttrNotNull   // required
+	TokenAttrDefault   // default
+	TokenAttrHidden    // hash
+	TokenAttrCheck
+	TokenAttrHash
+
 	TokenEOF
 	TokenUnknown
 )
@@ -96,12 +98,13 @@ var keywords = map[string]TokenType{
 	"DELETE": TokenDelete,
 	"PUT":    TokenPut,
 	// constraints
-	"increment": TokenConstraintAutoIncrement,
-	"unique":    TokenConstraintUnique,
-	"default":   TokenConstraintDefault,
-	"fk":        TokenConstraintForeignKey,
-	"primary":   TokenConstraintPrimaryKey,
-	"required":  TokenConstraintNotNull,
+	"increment": TokenAttrIncrement,
+	"hash":      TokenAttrHash,
+	"unique":    TokenAttrUnique,
+	"default":   TokenAttrDefault,
+	"required":  TokenAttrNotNull,
+	"hidden":    TokenAttrHidden,
+	"check":     TokenAttrCheck,
 }
 
 var AllDataTypes = map[TokenType]struct{}{
@@ -112,12 +115,10 @@ var AllDataTypes = map[TokenType]struct{}{
 	TokenTypeUuid:      {},
 }
 
-var allConstraints = map[TokenType]struct{}{
-	TokenConstraintAutoIncrement: {},
-	TokenConstraintUnique:        {},
-	TokenConstraintForeignKey:    {},
-	TokenConstraintPrimaryKey:    {},
-	TokenConstraintNotNull:       {},
+var allAttrs = map[TokenType]struct{}{
+	TokenAttrIncrement: {},
+	TokenAttrUnique:    {},
+	TokenAttrNotNull:   {},
 }
 
 // var AnnotationOpens = map[TokenType]struct{}{
@@ -208,17 +209,13 @@ func (t TokenType) String() string {
 		return "TOKEN_put"
 	case TokenDelete:
 		return "TOKEN_delete"
-	case TokenConstraintAutoIncrement:
+	case TokenAttrIncrement:
 		return "TOKEN_autoincrement"
-	case TokenConstraintUnique:
+	case TokenAttrUnique:
 		return "TOKEN_unique"
-	case TokenConstraintForeignKey:
-		return "TOKEN_foreignkey"
-	case TokenConstraintPrimaryKey:
-		return "TOKEN_primarykey"
-	case TokenConstraintNotNull:
+	case TokenAttrNotNull:
 		return "TOKEN_required"
-	case TokenConstraintDefault:
+	case TokenAttrDefault:
 		return "TOKEN_default"
 	case TokenEOF:
 		return "TOKEN_eof"

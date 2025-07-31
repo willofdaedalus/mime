@@ -1,9 +1,9 @@
 package dsl
 
-type FieldKind int
+type fieldKind int
 
 const (
-	FieldPrimitive FieldKind = iota // `name text`
+	FieldPrimitive fieldKind = iota // `name text`
 	FieldReference                  // `owner @user.id`
 	FieldEmbedded                   // `@person`
 	FieldEnum                       // &enum_name
@@ -11,20 +11,20 @@ const (
 
 type entityNode struct {
 	name   string
-	fields []*Field
+	fields []*field
 }
 
-type ReferenceTarget struct {
+type referenceTarget struct {
 	Entity string
 	Field  string
 }
 
-type Field struct {
+type field struct {
 	Name       string
-	Kind       FieldKind
-	DataType   DataType
-	Target     *ReferenceTarget
-	Attributes Attribute
+	DataType   dataType
+	Attributes attribute
+	// Kind       fieldKind
+	// Target     *referenceTarget
 }
 
 type EnumNode struct {
@@ -33,8 +33,7 @@ type EnumNode struct {
 }
 
 type (
-	DataType  int
-	consType  uint8
+	dataType  int
 	fieldFlag uint8
 )
 
@@ -44,36 +43,33 @@ const (
 	flagNullable           = 1 << 2
 )
 
-const consNone consType = 0
 const (
-	consUnique consType = 1 << iota
-	consIncrement
-	consPrimary
-	consRequired
-	consDefault
-	consFK
-	// consEnsure
-)
-
-const (
-	DataText DataType = iota + 1
+	DataText dataType = iota + 1
 	DataInt
 	DataBool
 	DataReal
 	DataUUID
 	DataEnum
-	DataRef
 	DataTimestamp
 	DataOther
 )
 
-var TokenToDataType = map[TokenType]DataType{
+var TokenToDataType = map[TokenType]dataType{
 	TokenTypeText:      DataText,
 	TokenTypeInt:       DataInt,
 	TokenTypeFloat:     DataReal,
 	TokenTypeTimestamp: DataTimestamp,
 	TokenTypeUuid:      DataUUID,
 	TokenTypeBool:      DataBool,
+}
+
+var tokenToAttr = map[TokenType]attribute{
+	TokenAttrIncrement: AttrIncrement,
+	TokenAttrUnique:    AttrUnique,
+	TokenAttrDefault:   AttrDefault,
+	TokenAttrHidden:    AttrHidden,
+	TokenAttrCheck:     AttrCheck,
+	TokenAttrHash:      AttrHash,
 }
 
 func (e entityNode) NodeLiteral() string {

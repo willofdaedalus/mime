@@ -1,9 +1,9 @@
 app "todo"
 
 entity todo ->
-	id: number [increment]
-	item: text
-	status: bool
+	id number [increment]
+	item text
+	status bool
 end
 
 @todo routes ->
